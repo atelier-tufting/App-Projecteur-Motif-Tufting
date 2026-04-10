@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Atelier Tufting - Projecteur</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { 
+            background: black; 
+            color: white; 
+            margin: 0; 
+            font-family: sans-serif; 
+            overflow: hidden; 
+        }
+        /* La zone de projection qui contient tes 4 cadres alignés */
+        .table-projection { 
+            display: flex; 
+            width: 100vw; 
+            height: 100vh; 
+        }
+        .zone { 
+            flex: 1; 
+            border: 1px dashed #333; 
+            position: relative; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            overflow: hidden; 
+        }
+        /* Le motif est inversé (scaleX -1) et se place par rapport au centre de sa zone */
+        .motif { 
+            position: absolute; 
+            transform: translate(-50%, -50%) scaleX(-1); 
+            transition: all 0.2s ease-out; 
+        }
+        #status-bar { 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            background: rgba(0,255,0,0.1); 
+            font-size: 10px; 
+            padding: 5px; 
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="status-bar">Connexion en cours...</div>
+
+<div class="table-projection">
+    <div class="zone" id="z1"><img id="img1" class="motif" src=""></div>
+    <div class="zone" id="z2"><img id="img2" class="motif" src=""></div>
+    <div class="zone" id="z3"><img id="img3" class="motif" src=""></div>
+    <div class="zone" id="z4"><img id="img4" class="motif" src=""></div>
+</div>
+
+<script>
+    // TES PARAMÈTRES SUPABASE INJECTÉS
+    const SUPABASE_URL = 'https://hpjopidxmkgsswwkqkzr.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwam9waWR4bWtnc3N3d2txa3pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDY4MTIsImV4cCI6MjA5MTQyMjgxMn0.H2Olo613-fsMhJL8Nta6-YdVgMlJapovrVHXwzzZnPs';
+
+    // Initialisation du client Supabase
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Fonction qui met à jour l'image et sa position sur ton écran
+    function applyChange(data) {
+        const img = document.getElementById('img' + data.zone_id);
+        if (!img) return;
+
+        // Si une URL d'image est fournie, on l'affiche
+        if (data.image_url) {
+            img.src = data.image_url;
+            img.style.display = "block";
+        }
+        
+        // On applique les réglages (position en % et taille en pixels)
+        img.style.width = data.scale + 'px';
+        img.style.left = data.pos_x + '%';
+        img.style.top = data.pos_y + '%';
+        
+        document.getElementById('status-bar').innerText = "Connecté - Mis à jour Zone " + data.zone_id;
+    }
+
+    // ÉCOUTE EN TEMPS RÉEL : Dès que tu changes un truc dans Supabase, ça bouge ici
+    supabaseClient
+        .channel('public:projection_state')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'projection_state' }, payload => {
+            console.log('Signal reçu de Supabase !', payload);
+            applyChange(payload.new);
+        })
+        .subscribe();
+
+    // Au chargement, on récupère l'état actuel de la base
+    async function loadInitial() {
+        const { data, error } = await supabaseClient.from('projection_state').select('*');
+        if (data) {
+            data.forEach(d => applyChange(d));
+            document.getElementById('status-bar').innerText = "Connecté - Prêt pour l'atelier";
+        } else {
+            document.getElementById('status-bar').innerText = "Erreur de connexion : " + (error?.message || "Inconnue");
+        }
+    }
+    loadInitial();
+</script>
+</body>
+</html>

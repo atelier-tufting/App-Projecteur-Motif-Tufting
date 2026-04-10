@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Télécommande Tufting</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #111; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        button { padding: 20px; font-size: 18px; border: none; border-radius: 10px; background: #333; color: white; touch-action: manipulation; }
+        button:active { background: #555; }
+        .zone-selector { background: #007bff; grid-column: span 2; }
+        .control-panel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .big { grid-column: span 3; background: #28a745; }
+    </style>
+</head>
+<body>
+    <h2>Cadre Actif : <span id="zoneNum">1</span></h2>
+    
+    <div class="grid">
+        <button class="zone-selector" onclick="setZone(1)">SÉLECTIONNER CADRE 1</button>
+        <button class="zone-selector" onclick="setZone(2)">SÉLECTIONNER CADRE 2</button>
+    </div>
+
+    <div class="control-panel">
+        <div></div><button onclick="move(0, -2)">↑</button><div></div>
+        <button onclick="move(-2, 0)">←</button><button onclick="move(0, 2)">↓</button><button onclick="move(2, 0)">→</button>
+        <button onclick="zoom(0.9)">ZOOM -</button><div></div><button onclick="zoom(1.1)">ZOOM +</button>
+        <button class="big" onclick="updateImage()">CHANGER IMAGE (URL)</button>
+    </div>
+
+<script>
+    const SUPABASE_URL = 'https://hpjopidxmkgsswwkqkzr.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwam9waWR4bWtnc3N3d2txa3pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDY4MTIsImV4cCI6MjA5MTQyMjgxMn0.H2Olo613-fsMhJL8Nta6-YdVgMlJapovrVHXwzzZnPs';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentZone = 1;
+    let state = { pos_x: 50, pos_y: 50, scale: 300, image_url: "" };
+
+    function setZone(id) {
+        currentZone = id;
+        document.getElementById('zoneNum').innerText = id;
+    }
+
+    async function sendUpdate() {
+        await supabaseClient
+            .from('projection_state')
+            .upsert({ 
+                zone_id: currentZone, 
+                pos_x: state.pos_x, 
+                pos_y: state.pos_y, 
+                scale: Math.round(state.scale),
+                image_url: state.image_url 
+            }, { onConflict: 'zone_id' });
+    }
+
+    function move(x, y) {
+        state.pos_x += x;
+        state.pos_y += y;
+        sendUpdate();
+    }
+
+    function zoom(factor) {
+        state.scale *= factor;
+        sendUpdate();
+    }
+
+    function updateImage() {
+        const url = prompt("Colle l'URL de l'image :");
+        if(url) {
+            state.image_url = url;
+            sendUpdate();
+        }
+    }
+</script>
+</body>
+</html>

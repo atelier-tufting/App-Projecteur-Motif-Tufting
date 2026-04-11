@@ -1,63 +1,14 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Projecteur Tufting - 3m Optimized</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        body { background: black; margin: 0; overflow: hidden; font-family: sans-serif; }
-        /* Le conteneur du mur */
-        #wall { 
-            display: flex; 
-            align-items: flex-start; /* Alignement par le haut, la table règle le bas */
-            width: 100vw; 
-            height: 100vh; 
-            position: relative; 
-        }
-        
-        /* Ligne de table ajustable */
-        #table-line {
-            position: absolute;
-            width: 100%;
-            border-top: 3px solid rgba(255, 255, 255, 0.5); /* Plus visible en blanc */
-            bottom: 20%; 
-            z-index: 10;
-        }
-
-        .zone { 
-            position: relative; 
-            border: 1px solid #222; 
-            height: 100%; 
-            overflow: hidden;
-            display: none; /* Caché par défaut, activé par le layout */
-        }
-
-        .motif { 
-            position: absolute; 
-            transform: translate(-50%, -50%) scaleX(-1); 
-            pointer-events: none;
-            filter: brightness(1.2); /* Boost de visibilité */
-        }
-    </style>
-</head>
-<body>
-
-<div id="table-line"></div>
-<div id="wall">
-    <div class="zone" id="z1"><img id="img1" class="motif"></div>
-    <div class="zone" id="z2"><img id="img2" class="motif"></div>
-    <div class="zone" id="z3"><img id="img3" class="motif"></div>
-    <div class="zone" id="z4"><img id="img4" class="motif"></div>
-</div>
-
 <script>
     const SUPABASE_URL = 'https://hpjopidxmkgsswwkqkzr.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwam9waWR4bWtnc3N3d2txa3pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDY4MTIsImV4cCI6MjA5MTQyMjgxMn0.H2Olo613-fsMhJL8Nta6-YdVgMlJapovrVHXwzzZnPs';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    function updateObject(d) {
-        const img = document.getElementById('img' + d.zone_id);
+    function updateView(d) {
+        // Cette ligne accepte soit 'id' soit 'zone_id' pour ne plus bugger
+        const id = d.zone_id || d.id;
+        const img = document.getElementById('img' + id);
         if(!img) return;
+
         if(d.image_url) img.src = d.image_url;
         img.style.width = d.scale + "px";
         img.style.left = d.pos_x + "%";
@@ -68,34 +19,30 @@
         document.getElementById('table-line').style.bottom = (s.table_height || 20) + "%";
         const zones = document.querySelectorAll('.zone');
         zones.forEach(z => z.style.display = 'none');
-
-        if(s.current_layout === '4-small') {
-            // 4 petits cadres de 40cm sur un mur de 3m (environ 13% chacun)
-            for(let i=0; i<4; i++) { 
-                zones[i].style.display = 'block'; 
-                zones[i].style.width = '25%'; 
-            }
-        } else if(s.current_layout === '1-med-2-small') {
-            // 1 moyen (30%) + 2 petits (15% chacun)
-            zones[0].style.display = 'block'; zones[0].style.width = '40%'; // Le moyen (90cm)
-            zones[1].style.display = 'block'; zones[1].style.width = '30%'; // Petit 1
-            zones[2].style.display = 'block'; zones[2].style.width = '30%'; // Petit 2
-        } else if(s.current_layout === '1-xl') {
-            // 1 XXL (prend toute la place disponible)
-            zones[0].style.display = 'block'; zones[0].style.width = '100%';
+        
+        const l = s.current_layout;
+        if(l === '4-small') { 
+            for(let i=0; i<4; i++){ zones[i].style.display='block'; zones[i].style.width='25%'; } 
+        } else if(l === '1-med-2-small') { 
+            zones[0].style.display='block'; zones[0].style.width='40%'; 
+            zones[1].style.display='block'; zones[1].style.width='30%'; 
+            zones[2].style.display='block'; zones[2].style.width='30%'; 
+        } else if(l === '1-xl') { 
+            zones[0].style.display='block'; zones[0].style.width='100%'; 
         }
     }
 
-    supabaseClient.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'projection_state' }, p => updateObject(p.new)).subscribe();
-    supabaseClient.channel('settings').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_settings' }, p => applySettings(p.new)).subscribe();
+    // ON ECOUTE TOUT SANS FILTRE
+    supabaseClient.channel('any').on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
+        if (payload.table === 'projection_state') updateView(payload.new);
+        if (payload.table === 'app_settings') applySettings(payload.new);
+    }).subscribe();
 
-    async function load() {
+    async function init() {
         const {data:p} = await supabaseClient.from('projection_state').select('*');
-        if(p) p.forEach(updateObject);
-        const {data:s} = await supabaseClient.from('app_settings').select('*').single();
+        if(p) p.forEach(updateView);
+        const {data:s} = await supabaseClient.from('app_settings').select('*').limit(1).single();
         if(s) applySettings(s);
     }
-    load();
+    init();
 </script>
-</body>
-</html>

@@ -3,56 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Remote V3 - Atelier Tufting</title>
+    <title>Remote Pro - Atelier Tufting</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background: #111; color: #eee; font-family: system-ui; padding: 10px; margin: 0; text-align: center; }
+        .status-bar { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 10px; margin-bottom: 10px; color: #888; }
+        .dot { width: 8px; height: 8px; background: #ff4d4d; border-radius: 50%; }
+        .dot.online { background: #28a745; box-shadow: 0 0 8px #28a745; }
+        
         .group { background: #222; padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #333; }
         .label { font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 10px; display: block; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        button { background: #333; color: white; border: none; padding: 15px 5px; border-radius: 10px; font-weight: 600; font-size: 13px; }
-        button:active { background: #444; }
-        .active { background: #007bff !important; }
+        
+        /* Grille adaptative pour la sélection des cadres */
+        #zone-selector { display: grid; gap: 8px; transition: 0.3s; }
+        .layout-4-small { grid-template-columns: repeat(4, 1fr); }
+        .layout-1-med-2-small { grid-template-columns: 2fr 1fr 1fr; }
+        .layout-1-xl { grid-template-columns: 1fr; }
+
+        .zone-btn { 
+            background: #333; border: 2px solid transparent; border-radius: 10px; 
+            aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; overflow: hidden; position: relative;
+        }
+        .zone-btn.active { border-color: #007bff; background: #004488; }
+        .zone-btn img { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; position: absolute; }
+        .zone-btn span { z-index: 2; font-weight: bold; font-size: 10px; background: rgba(0,0,0,0.5); padding: 2px 5px; border-radius: 4px; }
+
         .d-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 240px; margin: 10px auto; }
-        .btn-ctrl { background: #333; font-size: 20px; aspect-ratio: 1; border-radius: 50%; }
-        .btn-img { background: #28a745; width: 100%; padding: 20px; border-radius: 12px; margin-top: 10px; font-size: 16px; }
+        .btn-ctrl { background: #333; font-size: 20px; aspect-ratio: 1; border-radius: 50%; color: white; border: none; }
+        .btn-img { background: #28a745; width: 100%; padding: 20px; border-radius: 12px; margin-top: 10px; font-size: 16px; color: white; font-weight: bold; border: none; }
+        input[type=range] { width: 100%; accent-color: #007bff; }
     </style>
 </head>
 <body>
 
-    <div class="group">
-        <span class="label">Disposition du Mur</span>
-        <button id="l4" style="width:100%; margin-bottom:8px" onclick="setLayout('4-small', 'l4')">4 PETITS (40cm)</button>
-        <button id="l12" style="width:100%; margin-bottom:8px" onclick="setLayout('1-med-2-small', 'l12')">1 MOYEN + 2 PETITS</button>
-        <button id="lxl" style="width:100%" onclick="setLayout('1-xl', 'lxl')">1 XXL (150cm)</button>
+    <div class="status-bar">
+        <div id="status-dot" class="dot"></div>
+        <span id="status-text">PROJO DÉCONNECTÉ</span>
     </div>
 
     <div class="group">
-        <span class="label">Position de la Table</span>
-        <input type="range" min="0" max="80" value="20" style="width:100%" oninput="updateTable(this.value)">
-    </div>
-
-    <div class="group">
-        <span class="label">Sélection Cadre</span>
-        <div class="grid">
-            <button id="z1" class="active" onclick="setZone(1)">Z1</button>
-            <button id="z2" onclick="setZone(2)">Z2</button>
-            <button id="z3" onclick="setZone(3)">Z3</button>
-            <button id="z4" onclick="setZone(4)">Z4</button>
+        <span class="label">1. Disposition (Layout)</span>
+        <div style="display: flex; gap: 5px;">
+            <button id="btn-4-small" style="flex:1" onclick="setLayout('4-small')">4 PETITS</button>
+            <button id="btn-1-med-2-small" style="flex:1" onclick="setLayout('1-med-2-small')">MIXTE</button>
+            <button id="btn-1-xl" style="flex:1" onclick="setLayout('1-xl')">XXL</button>
         </div>
     </div>
 
-    <div class="d-pad">
-        <div></div><button class="btn-ctrl" onclick="move(0,-2)">↑</button><div></div>
-        <button class="btn-ctrl" onclick="move(-2,0)">←</button>
-        <button class="btn-ctrl" style="font-size:10px" onclick="reset()">RESET</button>
-        <button class="btn-ctrl" onclick="move(2,0)">→</button>
-        <button class="btn-ctrl" onclick="zoom(0.9)">-</button>
-        <button class="btn-ctrl" onclick="move(0,2)">↓</button>
-        <button class="btn-ctrl" onclick="zoom(1.1)">+</button>
+    <div class="group">
+        <span class="label">2. Sélectionner le Cadre</span>
+        <div id="zone-selector" class="layout-4-small">
+            <button id="z1" class="zone-btn active" onclick="setZone(1)"><img id="prev1" src=""><span>Z1</span></button>
+            <button id="z2" class="zone-btn" onclick="setZone(2)"><img id="prev2" src=""><span>Z2</span></button>
+            <button id="z3" class="zone-btn" onclick="setZone(3)"><img id="prev3" src=""><span>Z3</span></button>
+            <button id="z4" class="zone-btn" onclick="setZone(4)"><img id="prev4" src=""><span>Z4</span></button>
+        </div>
     </div>
 
-    <button class="btn-img" onclick="changeImage()">CHOISIR IMAGE</button>
+    <div class="group">
+        <span class="label">3. Ajuster le motif</span>
+        <div class="d-pad">
+            <div></div><button class="btn-ctrl" onclick="move(0,-2)">↑</button><div></div>
+            <button class="btn-ctrl" onclick="move(-2,0)">←</button>
+            <button class="btn-ctrl" style="font-size:10px" onclick="reset()">RESET</button>
+            <button class="btn-ctrl" onclick="move(2,0)">→</button>
+            <button class="btn-ctrl" onclick="zoom(0.9)">-</button>
+            <button class="btn-ctrl" onclick="move(0,2)">↓</button>
+            <button class="btn-ctrl" onclick="zoom(1.1)">+</button>
+        </div>
+    </div>
+
+    <div class="group">
+        <span class="label">Hauteur de Table</span>
+        <input type="range" min="0" max="80" value="20" onchange="updateTable(this.value)">
+    </div>
+
+    <button class="btn-img" onclick="changeImage()">CHANGER L'IMAGE</button>
 
 <script>
     const SUPABASE_URL = 'https://hpjopidxmkgsswwkqkzr.supabase.co';
@@ -60,36 +87,77 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let currentZone = 1;
-    let state = { pos_x:50, pos_y:50, scale:300 };
+    let localStates = { 1:{pos_x:50,pos_y:50,scale:300}, 2:{pos_x:50,pos_y:50,scale:300}, 3:{pos_x:50,pos_y:50,scale:300}, 4:{pos_x:50,pos_y:50,scale:300} };
+
+    async function checkConn() {
+        const { data, error } = await supabaseClient.from('app_settings').select('*').eq('id', 1).single();
+        if(!error) {
+            document.getElementById('status-dot').classList.add('online');
+            document.getElementById('status-text').innerText = "PROJECTEUR CONNECTÉ";
+            updateUI(data.current_layout);
+        }
+    }
 
     function setZone(id) {
         currentZone = id;
-        document.querySelectorAll('.grid button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.zone-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('z'+id).classList.add('active');
     }
 
-    async function move(x,y) { state.pos_x+=x; state.pos_y+=y; send(); }
-    async function zoom(f) { state.scale*=f; send(); }
-    async function reset() { state = {pos_x:50, pos_y:50, scale:300}; send(); }
-    
-    async function send() {
-        await supabaseClient.from('projection_state').upsert({ zone_id:currentZone, ...state }, {onConflict:'zone_id'});
+    async function setLayout(l) {
+        await supabaseClient.from('app_settings').update({ current_layout: l }).eq('id', 1);
+        updateUI(l);
     }
 
-    async function setLayout(l, btnId) {
-        document.querySelectorAll('.group button').forEach(b => b.classList.remove('active'));
-        document.getElementById(btnId).classList.add('active');
-        await supabaseClient.from('app_settings').update({ current_layout: l }).eq('id', 1);
+    function updateUI(layout) {
+        const selector = document.getElementById('zone-selector');
+        selector.className = 'layout-' + layout;
+        
+        // Cacher les boutons inutiles selon le layout
+        document.getElementById('z2').style.display = (layout === '1-xl') ? 'none' : 'flex';
+        document.getElementById('z3').style.display = (layout === '4-small' || layout === '1-med-2-small') ? 'flex' : 'none';
+        document.getElementById('z4').style.display = (layout === '4-small') ? 'flex' : 'none';
+        
+        // Marquer le bouton de layout actif
+        document.querySelectorAll('.group:first-of-type button').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + layout).classList.add('active');
+
+        if (layout === '1-xl') setZone(1);
     }
+
+    async function send() {
+        await supabaseClient.from('projection_state').upsert({ zone_id:currentZone, ...localStates[currentZone] }, {onConflict:'zone_id'});
+        if(localStates[currentZone].image_url) {
+            document.getElementById('prev' + currentZone).src = localStates[currentZone].image_url;
+        }
+    }
+
+    function move(x,y) { localStates[currentZone].pos_x+=x; localStates[currentZone].pos_y+=y; send(); }
+    function zoom(f) { localStates[currentZone].scale*=f; send(); }
+    function reset() { localStates[currentZone] = {pos_x:50,pos_y:50,scale:300}; send(); }
 
     async function updateTable(val) {
         await supabaseClient.from('app_settings').update({ table_height: val }).eq('id', 1);
     }
 
     function changeImage() {
-        const url = prompt("Lien de l'image (Notion ou Google) :");
-        if(url) { state.image_url = url; send(); }
+        const url = prompt("Lien de l'image :");
+        if(url) { localStates[currentZone].image_url = url; send(); }
     }
+
+    // Charger les images existantes au démarrage
+    async function loadImages() {
+        const { data } = await supabaseClient.from('projection_state').select('*');
+        if(data) {
+            data.forEach(d => {
+                localStates[d.zone_id] = d;
+                if(d.image_url) document.getElementById('prev' + d.zone_id).src = d.image_url;
+            });
+        }
+    }
+
+    checkConn();
+    loadImages();
 </script>
 </body>
 </html>

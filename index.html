@@ -2,19 +2,21 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Projecteur - Atelier Tufting</title>
+    <title>Projecteur Master - Atelier Tufting</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --brand-blue: #0033CC;
             --brand-gold: #FFD700;
+            --cream: #FDF2D5;
         }
 
         body { 
-            background: black; 
+            background: #050505; /* Noir très profond pour le contraste */
             margin: 0; 
             overflow: hidden; 
-            font-family: sans-serif;
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
         }
 
         #wall { 
@@ -22,62 +24,114 @@
             width: 100vw; 
             height: 100vh; 
             position: relative; 
+            z-index: 2; /* Au-dessus de l'animation de fond */
         }
 
-        /* La ligne de table est maintenant à ta couleur Bleue */
+        /* --- ANIMATION DE FOND : PRAIRIE DE LAINE HD --- */
+        #laine-fond {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1; /* Derrière l'interface */
+            opacity: 0.15; /* Très discret pour ne pas gêner */
+            /* Génération d'un fond texturé sombre */
+            background-image: 
+                radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                linear-gradient(45deg, #111 25%, #050505 25%, #050505 50%, #111 50%, #111 75%, #050505 75%, #050505 100%);
+            background-size: 30px 30px, 100px 100px;
+            filter: blur(1px); /* Léger flou pour le cosy */
+            animation: prairieVenteuse 30s ease-in-out infinite alternate;
+        }
+
+        @keyframes prairieVenteuse {
+            0% { transform: scale(1) translate(0, 0); }
+            50% { transform: scale(1.05) translate(-1%, -1%); }
+            100% { transform: scale(1) translate(1%, 1%); }
+        }
+
+        /* --- LIGNE DE TABLE : FIL DE LAINE BLEU --- */
         #table-line { 
             position: absolute; 
             width: 100%; 
-            border-top: 3px solid var(--brand-blue); 
+            height: 12px; /* Plus épais pour la texture */
             z-index: 10; 
             bottom: 20%;
-            box-shadow: 0 0 10px rgba(0, 51, 204, 0.5);
+            /* Génération d'une texture de fil de laine bleue */
+            background: 
+                repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 51, 204, 0.3) 10px, rgba(0, 51, 204, 0.3) 20px),
+                linear-gradient(to bottom, var(--brand-blue), #001144);
+            border-radius: 6px;
+            filter: drop-shadow(0 0 8px rgba(0, 51, 204, 0.6));
         }
 
-        /* Petit label pour la ligne */
         #table-line::after {
             content: "LIMITE TABLE";
             position: absolute;
-            right: 10px;
-            top: -15px;
+            right: 15px;
+            top: -18px;
             color: var(--brand-blue);
-            font-size: 10px;
+            font-size: 11px;
             font-weight: bold;
+            letter-spacing: 1px;
         }
 
         .zone { 
             position: relative; 
-            border-right: 1px solid rgba(255, 255, 255, 0.1); 
+            border-right: 1px solid rgba(255, 255, 255, 0.05); 
             height: 100%; 
             display: none; 
             overflow: hidden; 
         }
 
-        /* Effet miroir indispensable */
         .motif { 
             position: absolute; 
             transform: translateX(-50%) scaleX(-1); 
             max-width: none !important; 
             bottom: 0; 
             display: none;
+            /* Petit effet néon discret sur le motif pour le projo */
+            filter: drop-shadow(0 0 3px white);
         }
 
-        /* Logo en filigrane discret pour le branding */
-        #watermark {
+        /* --- BRANDING DISCRET (Logo & Horloge) --- */
+        #watermark-container {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
-            width: 100px;
-            opacity: 0.15;
+            bottom: 25px;
+            left: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
             z-index: 5;
             pointer-events: none;
+            opacity: 0.2; /* Très transparent */
+        }
+
+        #watermark-logo {
+            width: 100px;
+            /* Ton logo couleur, on le passe en "lumière" monochrome */
+            filter: brightness(0) invert(1); 
+        }
+
+        #atelier-clock {
+            color: var(--cream);
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            letter-spacing: 2px;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
 
-    <img id="watermark" src="https://tuftingatelier.fr/cdn/shop/files/atelier_tufting_logoo-removebg-preview_1_84cb01dc-754c-427d-97c1-98bb8fc97213.png?height=72&v=1760374452">
+    <div id="laine-fond"></div>
+
     <div id="table-line"></div>
+    
+    <div id="watermark-container">
+        <img id="watermark-logo" src="https://tuftingatelier.fr/cdn/shop/files/atelier_tufting_logoo-removebg-preview_1_84cb01dc-754c-427d-97c1-98bb8fc97213.png?height=72&v=1760374452">
+        <div id="atelier-clock">00:00</div>
+    </div>
+
     <div id="wall">
         <div class="zone" id="z1"><img id="img1" class="motif"></div>
         <div class="zone" id="z2"><img id="img2" class="motif"></div>
@@ -86,12 +140,25 @@
     </div>
 
 <script>
+    // --- INSÈRE TES CLÉS SUPABASE ICI ---
     const SUPABASE_URL = 'https://hpjopidxmkgsswwkqkzr.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwam9waWR4bWtnc3N3d2txa3pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDY4MTIsImV4cCI6MjA5MTQyMjgxMn0.H2Olo613-fsMhJL8Nta6-YdVgMlJapovrVHXwzzZnPs';
+    // -------------------------------------
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let currentTableHeight = 20;
 
+    // --- HORLOGE JS ---
+    function updateClock() {
+        const now = new Date();
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        document.getElementById('atelier-clock').innerText = `${h}:${m}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock(); // Initialisation
+
+    // --- LOGIQUE PROJO ---
     function updateView(d) {
         const id = d.zone_id || d.id;
         const img = document.getElementById('img' + id);
@@ -133,7 +200,6 @@
             zones.forEach(z => { z.style.display='block'; z.style.width='25%'; });
         }
 
-        // Rafraîchir les images après changement de layout
         const {data} = await supabaseClient.from('projection_state').select('*');
         if(data) data.forEach(updateView);
     }

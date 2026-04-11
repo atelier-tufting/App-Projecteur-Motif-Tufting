@@ -10,8 +10,19 @@
         body { background: var(--brand-bg); color: var(--dark-grey); font-family: system-ui; padding: 10px; margin: 0; text-align: center; }
         .header-logo { width: 150px; margin: 10px auto; display: block; }
         
+        /* SECTION SELECTION CLIENT */
         .notion-box { background: var(--brand-blue); padding: 15px; border-radius: 20px; margin-bottom: 15px; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        .notion-box select { width: 100%; padding: 12px; border-radius: 10px; border: none; font-size: 14px; font-weight: bold; margin-top: 10px; background: white; color: var(--brand-blue); }
+        .notion-box select { 
+            width: 100%; 
+            padding: 12px; 
+            border-radius: 10px; 
+            border: none; 
+            font-size: 14px; 
+            font-weight: bold; 
+            margin-top: 10px; 
+            background: white; 
+            color: var(--brand-blue);
+        }
 
         .status-bar { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 10px; margin-bottom: 10px; color: var(--brand-blue); font-weight: bold; }
         .dot { width: 8px; height: 8px; background: #ff4d4d; border-radius: 50%; }
@@ -19,6 +30,7 @@
         
         .group { background: white; padding: 15px; border-radius: 20px; margin-bottom: 10px; border: 1px solid rgba(0,51,204,0.1); }
         .label { font-size: 11px; color: var(--brand-blue); text-transform: uppercase; margin-bottom: 10px; display: block; font-weight: 900; }
+        
         .layout-grid { display: flex; gap: 5px; }
         .layout-grid button { flex: 1; padding: 10px 5px; background: #eee; border: none; border-radius: 10px; color: var(--brand-blue); font-size: 10px; font-weight: bold; }
         .layout-grid button.active-layout { background: var(--brand-blue); color: white; }
@@ -31,8 +43,8 @@
         
         .zone-btn { background: #eee; border: 3px solid transparent; border-radius: 12px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
         .zone-btn.active { border-color: var(--brand-gold); background: white; }
-        .zone-btn img { width: 100%; height: 100%; object-fit: cover; opacity: 0.4; position: absolute; }
-        .zone-btn span { z-index: 2; font-weight: bold; font-size: 12px; color: var(--brand-blue); }
+        .zone-btn img { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; position: absolute; }
+        .zone-btn span { z-index: 2; font-weight: bold; font-size: 12px; color: var(--brand-blue); text-shadow: 0 0 5px white; }
         
         .d-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 220px; margin: 10px auto; }
         .btn-ctrl { background: var(--brand-blue); aspect-ratio: 1; border-radius: 50%; color: white; font-size: 20px; border: none; display: flex; align-items: center; justify-content: center; }
@@ -46,9 +58,9 @@
     <img src="https://tuftingatelier.fr/cdn/shop/files/atelier_tufting_logoo-removebg-preview_1_84cb01dc-754c-427d-97c1-98bb8fc97213.png?height=72&v=1760374452" class="header-logo">
     
     <div class="notion-box">
-        <span style="font-size: 10px; font-weight: 900; letter-spacing: 1px;">MOTIFS CLIENTS (CHRONO)</span>
+        <span style="font-size: 10px; font-weight: 900; letter-spacing: 1px;">SÉLECTEUR DE MOTIFS</span>
         <select id="client-list" onchange="loadMotif(this.value)">
-            <option value="">Chargement de la liste...</option>
+            <option value="">Chargement...</option>
         </select>
     </div>
 
@@ -92,7 +104,7 @@
         <input type="range" id="table-slider" min="0" max="80" value="20" oninput="updateTable(this.value)">
     </div>
 
-    <button class="btn-img" onclick="changeImage()">CHANGER L'IMAGE (LIEN)</button>
+    <button class="btn-img" onclick="changeImage()">LIEN MANUEL (URGENCE)</button>
 
 <script>
     const SUPABASE_URL = 'https://hpjopidxmkgsswwkqkzr.supabase.co';
@@ -103,7 +115,6 @@
     let localStates = { 1:{pos_x:50,pos_y:50,scale:300,image_url:'vide'}, 2:{pos_x:50,pos_y:50,scale:300,image_url:'vide'}, 3:{pos_x:50,pos_y:50,scale:300,image_url:'vide'}, 4:{pos_x:50,pos_y:50,scale:300,image_url:'vide'} };
 
     async function fetchClients() {
-        // Récupère tout trié par créneau horaire
         const { data } = await supabaseClient.from('liste_clients').select('*').order('creneau', { ascending: true });
         const select = document.getElementById('client-list');
         select.innerHTML = '<option value="">-- Choisir un motif --</option>';
@@ -113,15 +124,10 @@
             data.forEach(c => {
                 const opt = document.createElement('option');
                 opt.value = c.image_url;
-                
-                // On crée une clé par Nom + Date pour gérer les doublons (plusieurs motifs)
                 let key = `${c.creneau}-${c.nom}`;
                 counts[key] = (counts[key] || 0) + 1;
-                
-                // Si on a plus d'une ligne pour la même personne à la même date, on numérote
-                let labelInfo = counts[key] > 1 ? ` (n° ${counts[key]})` : '';
-                
-                opt.text = `${c.creneau ? c.creneau : '??'} | ${c.nom}${labelInfo}`;
+                let motifNum = counts[key] > 1 ? ` (n°${counts[key]})` : '';
+                opt.text = `🖼️ ${c.creneau || '??'} | ${c.nom}${motifNum}`;
                 select.appendChild(opt);
             });
         }
@@ -168,10 +174,10 @@
         const prev = document.getElementById('prev' + currentZone);
         if(localStates[currentZone].image_url && localStates[currentZone].image_url !== 'vide') {
             prev.src = localStates[currentZone].image_url;
-            prev.style.opacity = "0.4";
+            prev.style.display = "block";
         } else {
             prev.src = "";
-            prev.style.opacity = "0";
+            prev.style.display = "none";
         }
     }
 
@@ -185,14 +191,14 @@
         const { data } = await supabaseClient.from('projection_state').select('*');
         if(data) data.forEach(d => {
             localStates[d.zone_id] = d;
+            const prev = document.getElementById('prev' + d.zone_id);
             if(d.image_url && d.image_url !== 'vide') {
-                document.getElementById('prev' + d.zone_id).src = d.image_url;
-                document.getElementById('prev' + d.zone_id).style.opacity = "0.4";
+                prev.src = d.image_url;
+                prev.style.display = "block";
             }
         });
         checkConn();
         fetchClients();
-        // Rafraîchit quand une nouvelle ligne est insérée dans la base
         supabaseClient.channel('custom-list').on('postgres_changes', {event:'INSERT', schema:'public', table:'liste_clients'}, fetchClients).subscribe();
     }
     init();

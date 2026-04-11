@@ -2,79 +2,37 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Projecteur - Atelier Tufting</title>
+    <title>PROJO ATELIER V5</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { 
-            background: #000; 
-            margin: 0; 
-            overflow: hidden; 
-            font-family: sans-serif;
-        }
+        body { background: #000 !important; margin: 0; overflow: hidden; font-family: sans-serif; }
+        
+        /* Indicateur de version pour être SUR que ça a actualisé */
+        #version-tag { position: absolute; top: 10px; right: 10px; color: #111; font-size: 10px; z-index: 100; }
 
-        /* --- FOND ANIMÉ : Particules de Laine --- */
-        #bg-canvas {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            z-index: 1;
-            opacity: 0.3; /* Très discret */
-        }
+        #wall { display: flex; width: 100vw; height: 100vh; position: relative; z-index: 2; }
 
-        #wall { 
-            display: flex; 
-            width: 100vw; 
-            height: 100vh; 
-            position: relative; 
-            z-index: 2;
-        }
-
-        /* --- LIGNE DE TABLE STYLE NÉON BLEU --- */
+        /* Ligne Bleue Atelier */
         #table-line { 
-            position: absolute; 
-            width: 100%; 
-            border-top: 2px solid #0033CC; 
-            z-index: 10; 
-            bottom: 20%;
-            box-shadow: 0 0 15px rgba(0, 51, 204, 0.6);
+            position: absolute; width: 100%; border-top: 3px solid #0033CC; 
+            z-index: 10; bottom: 20%; box-shadow: 0 0 15px rgba(0, 51, 204, 0.5);
         }
 
-        #table-line::after {
-            content: "LIMITE TABLE";
-            position: absolute;
-            right: 20px;
-            top: -15px;
-            color: #0033CC;
-            font-size: 10px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            opacity: 0.5;
-        }
+        .zone { position: relative; border-right: 1px solid #111; height: 100%; display: none; overflow: hidden; }
+        .motif { position: absolute; transform: translateX(-50%) scaleX(-1); max-width: none !important; bottom: 0; display: none; }
 
-        .zone { 
-            position: relative; 
-            border-right: 1px solid rgba(255, 255, 255, 0.05); 
-            height: 100%; 
-            display: none; 
-            overflow: hidden; 
-        }
-
-        .motif { 
-            position: absolute; 
-            transform: translateX(-50%) scaleX(-1); 
-            max-width: none !important; 
-            bottom: 0; 
-            display: none;
-            /* Filtre pour rendre le motif plus net en projection */
-            filter: contrast(1.1) brightness(1.1);
+        /* Animation de fond très légère */
+        #bg-glow {
+            position: absolute; width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 50%, #050505 0%, #000 100%);
+            z-index: 1;
         }
     </style>
 </head>
 <body>
-
-    <canvas id="bg-canvas"></canvas>
+    <div id="version-tag">DESIGN_V5_CONNECTED</div>
+    <div id="bg-glow"></div>
     <div id="table-line"></div>
-    
     <div id="wall">
         <div class="zone" id="z1"><img id="img1" class="motif"></div>
         <div class="zone" id="z2"><img id="img2" class="motif"></div>
@@ -83,87 +41,72 @@
     </div>
 
 <script>
+    // VERIFICATION DES CLES
     const SUPABASE_URL = 'https://hpjopidxmkgsswwkqkzr.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwam9waWR4mkgsswwkqkzrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDY4MTIsImV4cCI6MjA5MTQyMjgxMn0.H2Olo613-fsMhJL8Nta6-YdVgMlJapovrVHXwzzZnPs';
+    
+    // Tentative de connexion
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let currentTableHeight = 20;
 
-    // --- ANIMATION DE FOND (Micro-fibres en suspension) ---
-    const canvas = document.getElementById('bg-canvas');
-    const ctx = canvas.getContext('2d');
-    let particles = [];
-
-    function initParticles() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        particles = [];
-        for(let i=0; i<60; i++) {
-            particles.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                size: Math.random() * 2,
-                speedX: (Math.random() - 0.5) * 0.2,
-                speedY: (Math.random() - 0.5) * 0.2,
-                alpha: Math.random()
-            });
-        }
-    }
-
-    function animate() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        particles.forEach(p => {
-            p.x += p.speedX;
-            p.y += p.speedY;
-            if(p.x > canvas.width) p.x = 0; if(p.x < 0) p.x = canvas.width;
-            if(p.y > canvas.height) p.y = 0; if(p.y < 0) p.y = canvas.height;
-            ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha * 0.5})`;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            ctx.fill();
-        });
-        requestAnimationFrame(animate);
-    }
-    window.addEventListener('resize', initParticles);
-    initParticles();
-    animate();
-
-    // --- LOGIQUE PROJECTION ---
     function updateView(d) {
-        const id = d.zone_id;
+        if (!d) return;
+        const id = d.zone_id || d.id;
         const img = document.getElementById('img' + id);
         if(!img) return;
-        if(!d.image_url || d.image_url === 'vide') { img.style.display = "none"; return; }
+
+        if(!d.image_url || d.image_url === 'vide') {
+            img.style.display = "none";
+            return;
+        }
+
         img.src = d.image_url;
         img.style.display = "block";
         img.style.width = (d.scale || 300) + "px";
         img.style.left = (d.pos_x || 50) + "%";
-        img.style.bottom = (currentTableHeight + (d.pos_y - 50)) + "%";
+        
+        const offsetY = (d.pos_y - 50);
+        img.style.bottom = (currentTableHeight + offsetY) + "%";
     }
 
     async function applySettings(s) {
+        if (!s) return;
         currentTableHeight = parseInt(s.table_height || 20);
         document.getElementById('table-line').style.bottom = currentTableHeight + "%";
+        
         const zones = document.querySelectorAll('.zone');
         zones.forEach(z => z.style.display = 'none');
-        const l = s.current_layout;
-        if(l === '1-xl') { zones[0].style.display='block'; zones[0].style.width='100%'; }
-        else if(l === '2-med') { zones[0].style.display='block'; zones[0].style.width='50%'; zones[1].style.display='block'; zones[1].style.width='50%'; }
-        else if(l === '1-med-2-small') { zones[0].style.display='block'; zones[0].style.width='50%'; zones[1].style.display='block'; zones[1].style.width='25%'; zones[2].style.display='block'; zones[2].style.width='25%'; }
-        else if(l === '4-small') { zones.forEach(z => { z.style.display='block'; z.style.width='25%'; }); }
         
+        const l = s.current_layout;
+        if(l === '1-xl') { 
+            zones[0].style.display='block'; zones[0].style.width='100%'; 
+        } else if(l === '2-med') { 
+            zones[0].style.display='block'; zones[0].style.width='50%'; 
+            zones[1].style.display='block'; zones[1].style.width='50%'; 
+        } else if(l === '1-med-2-small') { 
+            zones[0].style.display='block'; zones[0].style.width='50%'; 
+            zones[1].style.display='block'; zones[1].style.width='25%'; 
+            zones[2].style.display='block'; zones[2].style.width='25%'; 
+        } else if(l === '4-small') { 
+            zones.forEach(z => { z.style.display='block'; z.style.width='25%'; });
+        }
+
         const {data} = await supabaseClient.from('projection_state').select('*');
         if(data) data.forEach(updateView);
     }
 
-    supabaseClient.channel('any').on('postgres_changes', {event:'*', schema:'public'}, (p) => {
+    // Ecoute en temps réel
+    supabaseClient.channel('db_changes').on('postgres_changes', {event:'*', schema:'public'}, (p) => {
         if(p.table === 'app_settings') applySettings(p.new);
         if(p.table === 'projection_state') updateView(p.new);
     }).subscribe();
 
+    // Init
     async function init() {
-        const {data:s} = await supabaseClient.from('app_settings').select('*').limit(1).single();
+        const {data:s, error} = await supabaseClient.from('app_settings').select('*').limit(1).single();
         if(s) applySettings(s);
+        if(error) console.log("Erreur Init:", error);
     }
     init();
 </script>

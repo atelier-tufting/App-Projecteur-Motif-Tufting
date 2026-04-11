@@ -5,15 +5,76 @@
     <title>Projecteur - Atelier Tufting</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: black; margin: 0; overflow: hidden; }
-        #wall { display: flex; width: 100vw; height: 100vh; position: relative; }
-        #table-line { position: absolute; width: 100%; border-top: 2px solid #0033CC; z-index: 10; bottom: 20%; }
-        .zone { position: relative; border-right: 1px solid #111; height: 100%; display: none; overflow: hidden; }
-        .motif { position: absolute; transform: translateX(-50%) scaleX(-1); max-width: none !important; bottom: 0; display: none; }
+        body { 
+            background: #000; 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: sans-serif;
+        }
+
+        /* --- FOND ANIMÉ : Particules de Laine --- */
+        #bg-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 1;
+            opacity: 0.3; /* Très discret */
+        }
+
+        #wall { 
+            display: flex; 
+            width: 100vw; 
+            height: 100vh; 
+            position: relative; 
+            z-index: 2;
+        }
+
+        /* --- LIGNE DE TABLE STYLE NÉON BLEU --- */
+        #table-line { 
+            position: absolute; 
+            width: 100%; 
+            border-top: 2px solid #0033CC; 
+            z-index: 10; 
+            bottom: 20%;
+            box-shadow: 0 0 15px rgba(0, 51, 204, 0.6);
+        }
+
+        #table-line::after {
+            content: "LIMITE TABLE";
+            position: absolute;
+            right: 20px;
+            top: -15px;
+            color: #0033CC;
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            opacity: 0.5;
+        }
+
+        .zone { 
+            position: relative; 
+            border-right: 1px solid rgba(255, 255, 255, 0.05); 
+            height: 100%; 
+            display: none; 
+            overflow: hidden; 
+        }
+
+        .motif { 
+            position: absolute; 
+            transform: translateX(-50%) scaleX(-1); 
+            max-width: none !important; 
+            bottom: 0; 
+            display: none;
+            /* Filtre pour rendre le motif plus net en projection */
+            filter: contrast(1.1) brightness(1.1);
+        }
     </style>
 </head>
 <body>
+
+    <canvas id="bg-canvas"></canvas>
     <div id="table-line"></div>
+    
     <div id="wall">
         <div class="zone" id="z1"><img id="img1" class="motif"></div>
         <div class="zone" id="z2"><img id="img2" class="motif"></div>
@@ -28,6 +89,46 @@
 
     let currentTableHeight = 20;
 
+    // --- ANIMATION DE FOND (Micro-fibres en suspension) ---
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function initParticles() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        particles = [];
+        for(let i=0; i<60; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 2,
+                speedX: (Math.random() - 0.5) * 0.2,
+                speedY: (Math.random() - 0.5) * 0.2,
+                alpha: Math.random()
+            });
+        }
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            p.x += p.speedX;
+            p.y += p.speedY;
+            if(p.x > canvas.width) p.x = 0; if(p.x < 0) p.x = canvas.width;
+            if(p.y > canvas.height) p.y = 0; if(p.y < 0) p.y = canvas.height;
+            ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha * 0.5})`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        requestAnimationFrame(animate);
+    }
+    window.addEventListener('resize', initParticles);
+    initParticles();
+    animate();
+
+    // --- LOGIQUE PROJECTION ---
     function updateView(d) {
         const id = d.zone_id;
         const img = document.getElementById('img' + id);

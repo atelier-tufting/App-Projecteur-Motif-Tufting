@@ -9,32 +9,51 @@
         :root { --brand-blue: #0033CC; --brand-gold: #FFD700; --brand-bg: #FDF2D5; --dark-grey: #222; }
         body { background: var(--brand-bg); color: var(--dark-grey); font-family: system-ui; padding: 10px; margin: 0; text-align: center; }
         .header-logo { width: 150px; margin: 10px auto; display: block; }
+        
+        /* SECTEUR CLIENTS NOTION */
+        .notion-box { background: var(--brand-blue); padding: 15px; border-radius: 20px; margin-bottom: 15px; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .notion-box select { width: 100%; padding: 12px; border-radius: 10px; border: none; font-size: 14px; font-weight: bold; margin-top: 10px; background: white; color: var(--brand-blue); }
+
         .status-bar { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 10px; margin-bottom: 10px; color: var(--brand-blue); font-weight: bold; }
         .dot { width: 8px; height: 8px; background: #ff4d4d; border-radius: 50%; }
         .dot.online { background: #28a745; box-shadow: 0 0 8px #28a745; }
+        
         .group { background: white; padding: 15px; border-radius: 20px; margin-bottom: 10px; border: 1px solid rgba(0,51,204,0.1); }
         .label { font-size: 11px; color: var(--brand-blue); text-transform: uppercase; margin-bottom: 10px; display: block; font-weight: 900; }
+        
         .layout-grid { display: flex; gap: 5px; }
         .layout-grid button { flex: 1; padding: 10px 5px; background: #eee; border: none; border-radius: 10px; color: var(--brand-blue); font-size: 10px; font-weight: bold; }
         .layout-grid button.active-layout { background: var(--brand-blue); color: white; }
+        
         #zone-selector { display: grid; gap: 8px; transition: 0.3s; }
         .layout-4-small { grid-template-columns: repeat(4, 1fr); }
         .layout-2-med { grid-template-columns: repeat(2, 1fr); }
         .layout-1-med-2-small { grid-template-columns: 2fr 1fr 1fr; }
         .layout-1-xl { grid-template-columns: 1fr; }
+        
         .zone-btn { background: #eee; border: 3px solid transparent; border-radius: 12px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
         .zone-btn.active { border-color: var(--brand-gold); background: white; }
         .zone-btn img { width: 100%; height: 100%; object-fit: cover; opacity: 0.4; position: absolute; }
         .zone-btn span { z-index: 2; font-weight: bold; font-size: 12px; color: var(--brand-blue); }
+        
         .d-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 220px; margin: 10px auto; }
-        .btn-ctrl { background: var(--brand-blue); aspect-ratio: 1; border-radius: 50%; color: white; font-size: 20px; border: none; }
+        .btn-ctrl { background: var(--brand-blue); aspect-ratio: 1; border-radius: 50%; color: white; font-size: 20px; border: none; display: flex; align-items: center; justify-content: center; }
         .btn-reset { background: #ff4d4d !important; font-size: 10px !important; }
+        
         input[type=range] { width: 100%; accent-color: var(--brand-blue); }
         .btn-img { background: var(--brand-blue); width: 100%; padding: 15px; border-radius: 15px; font-size: 16px; color: var(--brand-gold); font-weight: 900; border: none; margin-top: 5px; }
     </style>
 </head>
 <body>
     <img src="https://tuftingatelier.fr/cdn/shop/files/atelier_tufting_logoo-removebg-preview_1_84cb01dc-754c-427d-97c1-98bb8fc97213.png?height=72&v=1760374452" class="header-logo">
+    
+    <div class="notion-box">
+        <span style="font-size: 10px; font-weight: 900; letter-spacing: 1px;">MOTIFS CLIENTS (NOTION)</span>
+        <select id="client-list" onchange="loadMotif(this.value)">
+            <option value="">Chargement de la liste...</option>
+        </select>
+    </div>
+
     <div class="status-bar"><div id="status-dot" class="dot"></div><span id="status-text">PROJO DÉCONNECTÉ</span></div>
     
     <div class="group">
@@ -75,14 +94,36 @@
         <input type="range" id="table-slider" min="0" max="80" value="20" oninput="updateTable(this.value)">
     </div>
 
-    <button class="btn-img" onclick="changeImage()">CHANGER L'IMAGE</button>
+    <button class="btn-img" onclick="changeImage()">LIEN MANUEL</button>
 
 <script>
     const SUPABASE_URL = 'https://hpjopidxmkgsswwkqkzr.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwam9waWR4bWtnc3N3d2txa3pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDY4MTIsImV4cCI6MjA5MTQyMjgxMn0.H2Olo613-fsMhJL8Nta6-YdVgMlJapovrVHXwzzZnPs';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
     let currentZone = 1;
     let localStates = { 1:{pos_x:50,pos_y:50,scale:300,image_url:'vide'}, 2:{pos_x:50,pos_y:50,scale:300,image_url:'vide'}, 3:{pos_x:50,pos_y:50,scale:300,image_url:'vide'}, 4:{pos_x:50,pos_y:50,scale:300,image_url:'vide'} };
+
+    async function fetchClients() {
+        // Tri chronologique par le champ 'creneau'
+        const { data } = await supabaseClient.from('liste_clients').select('*').order('creneau', { ascending: true });
+        const select = document.getElementById('client-list');
+        select.innerHTML = '<option value="">-- Choisir un motif --</option>';
+        if(data) {
+            data.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.image_url;
+                opt.text = `${c.creneau ? c.creneau : '??'} | ${c.nom}`;
+                select.appendChild(opt);
+            });
+        }
+    }
+
+    function loadMotif(url) {
+        if(!url) return;
+        localStates[currentZone].image_url = url;
+        send();
+    }
 
     async function checkConn() {
         const { data, error } = await supabaseClient.from('app_settings').select('*').eq('id', 1).single();
@@ -142,6 +183,8 @@
             }
         });
         checkConn();
+        fetchClients();
+        supabaseClient.channel('custom-list').on('postgres_changes', {event:'INSERT', schema:'public', table:'liste_clients'}, fetchClients).subscribe();
     }
     init();
 </script>

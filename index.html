@@ -1,48 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Projecteur Tufting - Mode Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: black; margin: 0; overflow: hidden; color: white; font-family: sans-serif; }
+        #debug-log { position: absolute; top: 10px; left: 10px; font-size: 10px; background: rgba(0,0,0,0.7); z-index: 100; max-height: 200px; overflow: hidden; }
+        #wall { display: flex; width: 100vw; height: 100vh; position: relative; }
+        #table-line { position: absolute; width: 100%; border-top: 3px solid red; z-index: 10; bottom: 20%; }
+        .zone { position: relative; border: 1px solid #222; height: 100%; display: none; overflow: hidden; }
+        .motif { position: absolute; transform: translate(-50%, -50%) scaleX(-1); border: 1px solid blue; }
+    </style>
+</head>
+<body>
+    <div id="debug-log">Initialisation...</div>
+    <div id="table-line"></div>
+    <div id="wall">
+        <div class="zone" id="z1"><img id="img1" class="motif"></div>
+        <div class="zone" id="z2"><img id="img2" class="motif"></div>
+        <div class="zone" id="z3"><img id="img3" class="motif"></div>
+        <div class="zone" id="z4"><img id="img4" class="motif"></div>
+    </div>
+
 <script>
     const SUPABASE_URL = 'https://hpjopidxmkgsswwkqkzr.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwam9waWR4bWtnc3N3d2txa3pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDY4MTIsImV4cCI6MjA5MTQyMjgxMn0.H2Olo613-fsMhJL8Nta6-YdVgMlJapovrVHXwzzZnPs';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const log = document.getElementById('debug-log');
+
+    function logger(msg) {
+        log.innerHTML = msg + "<br>" + log.innerHTML;
+        console.log(msg);
+    }
 
     function updateView(d) {
-        // Cette ligne accepte soit 'id' soit 'zone_id' pour ne plus bugger
         const id = d.zone_id || d.id;
+        logger("Mise à jour Zone " + id + " | Image: " + (d.image_url ? 'OK' : 'VIDE'));
         const img = document.getElementById('img' + id);
         if(!img) return;
-
-        if(d.image_url) img.src = d.image_url;
+        if(d.image_url && d.image_url !== 'vide') img.src = d.image_url;
         img.style.width = d.scale + "px";
         img.style.left = d.pos_x + "%";
         img.style.top = d.pos_y + "%";
     }
 
     function applySettings(s) {
+        logger("Nouveau Layout : " + s.current_layout);
         document.getElementById('table-line').style.bottom = (s.table_height || 20) + "%";
         const zones = document.querySelectorAll('.zone');
         zones.forEach(z => z.style.display = 'none');
-        
         const l = s.current_layout;
-        if(l === '4-small') { 
-            for(let i=0; i<4; i++){ zones[i].style.display='block'; zones[i].style.width='25%'; } 
-        } else if(l === '1-med-2-small') { 
-            zones[0].style.display='block'; zones[0].style.width='40%'; 
-            zones[1].style.display='block'; zones[1].style.width='30%'; 
-            zones[2].style.display='block'; zones[2].style.width='30%'; 
-        } else if(l === '1-xl') { 
-            zones[0].style.display='block'; zones[0].style.width='100%'; 
-        }
+        if(l === '4-small') { for(let i=0;i<4;i++){ zones[i].style.display='block'; zones[i].style.width='25%'; } }
+        else if(l === '1-med-2-small') { zones[0].style.display='block'; zones[0].style.width='40%'; zones[1].style.display='block'; zones[1].style.width='30%'; zones[2].style.display='block'; zones[2].style.width='30%'; }
+        else if(l === '1-xl') { zones[0].style.display='block'; zones[0].style.width='100%'; }
     }
 
-    // ON ECOUTE TOUT SANS FILTRE
-    supabaseClient.channel('any').on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
+    // ON FORCE L'ECOUTE SUR TOUT LE SCHEMA PUBLIC
+    const channel = supabaseClient.channel('realtime-all')
+    .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
+        logger("Signal reçu de la table: " + payload.table);
         if (payload.table === 'projection_state') updateView(payload.new);
         if (payload.table === 'app_settings') applySettings(payload.new);
-    }).subscribe();
+    })
+    .subscribe((status) => {
+        logger("Statut Realtime: " + status);
+    });
 
     async function init() {
-        const {data:p} = await supabaseClient.from('projection_state').select('*');
+        const {data:p, error:pe} = await supabaseClient.from('projection_state').select('*');
         if(p) p.forEach(updateView);
-        const {data:s} = await supabaseClient.from('app_settings').select('*').limit(1).single();
+        const {data:s, error:se} = await supabaseClient.from('app_settings').select('*').limit(1).single();
         if(s) applySettings(s);
+        if(pe || se) logger("Erreur Init: " + (pe?.message || se?.message));
     }
     init();
 </script>
+</body>
+</html>

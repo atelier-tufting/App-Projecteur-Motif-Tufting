@@ -10,29 +10,21 @@
         .status-bar { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 10px; margin-bottom: 10px; color: #888; }
         .dot { width: 8px; height: 8px; background: #ff4d4d; border-radius: 50%; }
         .dot.online { background: #28a745; box-shadow: 0 0 8px #28a745; }
-        
         .group { background: #222; padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #333; }
         .label { font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 10px; display: block; }
-        
-        /* Grille adaptative pour la sélection des cadres */
         #zone-selector { display: grid; gap: 8px; transition: 0.3s; }
         .layout-4-small { grid-template-columns: repeat(4, 1fr); }
         .layout-1-med-2-small { grid-template-columns: 2fr 1fr 1fr; }
         .layout-1-xl { grid-template-columns: 1fr; }
-
-        .zone-btn { 
-            background: #333; border: 2px solid transparent; border-radius: 10px; 
-            aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; 
-            justify-content: center; overflow: hidden; position: relative;
-        }
+        .zone-btn { background: #333; border: 2px solid transparent; border-radius: 10px; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; position: relative; }
         .zone-btn.active { border-color: #007bff; background: #004488; }
         .zone-btn img { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; position: absolute; }
         .zone-btn span { z-index: 2; font-weight: bold; font-size: 10px; background: rgba(0,0,0,0.5); padding: 2px 5px; border-radius: 4px; }
-
         .d-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 240px; margin: 10px auto; }
         .btn-ctrl { background: #333; font-size: 20px; aspect-ratio: 1; border-radius: 50%; color: white; border: none; }
         .btn-img { background: #28a745; width: 100%; padding: 20px; border-radius: 12px; margin-top: 10px; font-size: 16px; color: white; font-weight: bold; border: none; }
         input[type=range] { width: 100%; accent-color: #007bff; }
+        button.active-layout { background: #007bff; color: white; border: 1px solid white; }
     </style>
 </head>
 <body>
@@ -66,7 +58,7 @@
         <div class="d-pad">
             <div></div><button class="btn-ctrl" onclick="move(0,-2)">↑</button><div></div>
             <button class="btn-ctrl" onclick="move(-2,0)">←</button>
-            <button class="btn-ctrl" style="font-size:10px" onclick="reset()">RESET</button>
+            <button class="btn-ctrl" style="font-size:10px; background:#cc0000" onclick="reset()">RESET</button>
             <button class="btn-ctrl" onclick="move(2,0)">→</button>
             <button class="btn-ctrl" onclick="zoom(0.9)">-</button>
             <button class="btn-ctrl" onclick="move(0,2)">↓</button>
@@ -76,7 +68,7 @@
 
     <div class="group">
         <span class="label">Hauteur de Table</span>
-        <input type="range" min="0" max="80" value="20" onchange="updateTable(this.value)">
+        <input type="range" id="table-slider" min="0" max="80" value="20" oninput="updateTable(this.value)">
     </div>
 
     <button class="btn-img" onclick="changeImage()">CHANGER L'IMAGE</button>
@@ -87,13 +79,14 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let currentZone = 1;
-    let localStates = { 1:{pos_x:50,pos_y:50,scale:300}, 2:{pos_x:50,pos_y:50,scale:300}, 3:{pos_x:50,pos_y:50,scale:300}, 4:{pos_x:50,pos_y:50,scale:300} };
+    let localStates = { 1:{pos_x:50,pos_y:50,scale:300,image_url:'vide'}, 2:{pos_x:50,pos_y:50,scale:300,image_url:'vide'}, 3:{pos_x:50,pos_y:50,scale:300,image_url:'vide'}, 4:{pos_x:50,pos_y:50,scale:300,image_url:'vide'} };
 
     async function checkConn() {
         const { data, error } = await supabaseClient.from('app_settings').select('*').eq('id', 1).single();
         if(!error) {
             document.getElementById('status-dot').classList.add('online');
             document.getElementById('status-text').innerText = "PROJECTEUR CONNECTÉ";
+            document.getElementById('table-slider').value = data.table_height || 20;
             updateUI(data.current_layout);
         }
     }
@@ -112,46 +105,57 @@
     function updateUI(layout) {
         const selector = document.getElementById('zone-selector');
         selector.className = 'layout-' + layout;
-        
-        // Cacher les boutons inutiles selon le layout
         document.getElementById('z2').style.display = (layout === '1-xl') ? 'none' : 'flex';
         document.getElementById('z3').style.display = (layout === '4-small' || layout === '1-med-2-small') ? 'flex' : 'none';
         document.getElementById('z4').style.display = (layout === '4-small') ? 'flex' : 'none';
         
-        // Marquer le bouton de layout actif
-        document.querySelectorAll('.group:first-of-type button').forEach(b => b.classList.remove('active'));
-        document.getElementById('btn-' + layout).classList.add('active');
+        document.querySelectorAll('.group button').forEach(b => b.classList.remove('active-layout'));
+        const btn = document.getElementById('btn-' + layout);
+        if(btn) btn.classList.add('active-layout');
 
         if (layout === '1-xl') setZone(1);
     }
 
     async function send() {
         await supabaseClient.from('projection_state').upsert({ zone_id:currentZone, ...localStates[currentZone] }, {onConflict:'zone_id'});
-        if(localStates[currentZone].image_url) {
-            document.getElementById('prev' + currentZone).src = localStates[currentZone].image_url;
+        const prev = document.getElementById('prev' + currentZone);
+        if(localStates[currentZone].image_url && localStates[currentZone].image_url !== 'vide') {
+            prev.src = localStates[currentZone].image_url;
+            prev.style.opacity = "0.5";
+        } else {
+            prev.src = "";
+            prev.style.opacity = "0";
         }
     }
 
     function move(x,y) { localStates[currentZone].pos_x+=x; localStates[currentZone].pos_y+=y; send(); }
     function zoom(f) { localStates[currentZone].scale*=f; send(); }
-    function reset() { localStates[currentZone] = {pos_x:50,pos_y:50,scale:300}; send(); }
+    
+    // NOUVEAU RESET : Efface l'image et remet les positions
+    function reset() { 
+        localStates[currentZone] = {pos_x:50,pos_y:50,scale:300,image_url:'vide'}; 
+        send(); 
+    }
 
     async function updateTable(val) {
-        await supabaseClient.from('app_settings').update({ table_height: val }).eq('id', 1);
+        await supabaseClient.from('app_settings').update({ table_height: parseInt(val) }).eq('id', 1);
     }
 
     function changeImage() {
-        const url = prompt("Lien de l'image :");
-        if(url) { localStates[currentZone].image_url = url; send(); }
+        const url = prompt("Lien de l'image (Laisse vide pour effacer) :");
+        localStates[currentZone].image_url = url ? url : 'vide'; 
+        send();
     }
 
-    // Charger les images existantes au démarrage
     async function loadImages() {
         const { data } = await supabaseClient.from('projection_state').select('*');
         if(data) {
             data.forEach(d => {
                 localStates[d.zone_id] = d;
-                if(d.image_url) document.getElementById('prev' + d.zone_id).src = d.image_url;
+                if(d.image_url && d.image_url !== 'vide') {
+                    document.getElementById('prev' + d.zone_id).src = d.image_url;
+                    document.getElementById('prev' + d.zone_id).style.opacity = "0.5";
+                }
             });
         }
     }

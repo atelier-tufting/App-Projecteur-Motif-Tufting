@@ -2,26 +2,23 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Projecteur Tufting - Master</title>
+    <title>Projecteur Tufting - Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background: black; margin: 0; overflow: hidden; }
-        #debug-log { position: absolute; top: 0; left: 0; font-size: 8px; color: rgba(255,255,255,0.2); z-index: 100; pointer-events: none; }
         #wall { display: flex; width: 100vw; height: 100vh; position: relative; }
         #table-line { position: absolute; width: 100%; border-top: 2px solid red; z-index: 10; bottom: 20%; }
         .zone { position: relative; border: 1px solid #333; height: 100%; display: none; overflow: hidden; }
-        /* L'image est maintenant ancrée par le BAS (bottom) pour coller à la ligne */
-        .motif { position: absolute; transform: translateX(-50%) scaleX(-1); max-width: none !important; bottom: 0; }
+        .motif { position: absolute; transform: translateX(-50%) scaleX(-1); max-width: none !important; bottom: 0; display: none; }
     </style>
 </head>
 <body>
-    <div id="debug-log"></div>
     <div id="table-line"></div>
     <div id="wall">
-        <div class="zone" id="z1"><img id="img1" class="motif" src=""></div>
-        <div class="zone" id="z2"><img id="img2" class="motif" src=""></div>
-        <div class="zone" id="z3"><img id="img3" class="motif" src=""></div>
-        <div class="zone" id="z4"><img id="img4" class="motif" src=""></div>
+        <div class="zone" id="z1"><img id="img1" class="motif"></div>
+        <div class="zone" id="z2"><img id="img2" class="motif"></div>
+        <div class="zone" id="z3"><img id="img3" class="motif"></div>
+        <div class="zone" id="z4"><img id="img4" class="motif"></div>
     </div>
 
 <script>
@@ -29,28 +26,30 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwam9waWR4bWtnc3N3d2txa3pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDY4MTIsImV4cCI6MjA5MTQyMjgxMn0.H2Olo613-fsMhJL8Nta6-YdVgMlJapovrVHXwzzZnPs';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let currentTableHeight = 20; // Stockage local de la hauteur pour les images
+    let currentTableHeight = 20;
 
     function updateView(d) {
         const id = d.zone_id || d.id;
         const img = document.getElementById('img' + id);
         if(!img) return;
 
-        if(d.image_url && d.image_url.length > 5) {
-            img.src = d.image_url;
-            img.style.display = "block";
-        } else {
+        // RESET LOGIC : Si image_url est vide, "vide", ou null -> on cache l'image
+        if(!d.image_url || d.image_url === "" || d.image_url === "vide" || d.image_url === "null") {
             img.style.display = "none";
+            img.src = "";
+            return;
         }
+
+        // Si on a une URL, on affiche
+        img.src = d.image_url;
+        img.style.display = "block";
         
         const size = (d.scale && d.scale > 10) ? d.scale : 300;
         img.style.width = size + "px";
         img.style.left = (d.pos_x || 50) + "%";
         
-        // --- LOGIQUE AIMANT ---
-        // On calcule la position Y par rapport à la ligne de table
-        // d.pos_y à 50 = posé pile sur la ligne
-        const offset = (d.pos_y - 50); 
+        // Alignement sur la ligne rouge (bottom)
+        const offset = ((d.pos_y || 50) - 50); 
         img.style.bottom = (currentTableHeight + offset) + "%";
     }
 
@@ -62,8 +61,6 @@
     function applySettings(s) {
         currentTableHeight = s.table_height || 20;
         document.getElementById('table-line').style.bottom = currentTableHeight + "%";
-        
-        // On repositionne les images dès que la table bouge
         refreshAllImages();
 
         const zones = document.querySelectorAll('.zone');
@@ -87,7 +84,7 @@
 
     async function init() {
         const {data:s} = await supabaseClient.from('app_settings').select('*').limit(1).single();
-        if(s) applySettings(s); // applySettings lancera aussi refreshAllImages
+        if(s) applySettings(s);
     }
     init();
 </script>

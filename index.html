@@ -2,32 +2,34 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>PROJO ATELIER V5</title>
+    <title>PROJO ATELIER V6</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #000 !important; margin: 0; overflow: hidden; font-family: sans-serif; }
-        #version-tag { position: absolute; top: 10px; right: 10px; color: #111; font-size: 10px; z-index: 100; }
-        #wall { display: flex; width: 100vw; height: 100vh; position: relative; z-index: 2; }
+        body { background: #000; margin: 0; overflow: hidden; font-family: sans-serif; }
+        
+        /* FOND LAINE ANIMÉ DISCRET */
+        #texture-fond {
+            position: absolute; width: 100%; height: 100%;
+            background-image: url('https://www.transparenttextures.com/patterns/felt.png');
+            opacity: 0.1; z-index: 1;
+            animation: moveBg 20s linear infinite alternate;
+        }
+        @keyframes moveBg { from { transform: scale(1.1) translate(0,0); } to { transform: scale(1.2) translate(10px, 10px); } }
+
+        #wall { display: flex; width: 100vw; height: 100vh; position: relative; z-index: 5; }
+
+        /* LIGNE TABLE BLEUE */
         #table-line { 
             position: absolute; width: 100%; border-top: 3px solid #0033CC; 
-            z-index: 10; bottom: 20%; box-shadow: 0 0 15px rgba(0, 51, 204, 0.5);
+            z-index: 10; bottom: 20%; box-shadow: 0 0 20px rgba(0, 51, 204, 0.8);
         }
-        .zone { position: relative; border-right: 1px solid #111; height: 100%; display: none; overflow: hidden; }
-        .motif { position: absolute; transform: translateX(-50%) scaleX(-1); max-width: none !important; bottom: 0; display: none; }
-        #bg-glow {
-            position: absolute; width: 100%; height: 100%;
-            background: radial-gradient(circle at 50% 50%, #050505 0%, #000 100%);
-            z-index: 1;
-            animation: pulseBg 8s infinite alternate;
-        }
-        @keyframes pulseBg {
-            from { opacity: 0.5; } to { opacity: 1; }
-        }
+
+        .zone { position: relative; border-right: 1px solid rgba(255,255,255,0.1); height: 100%; display: none; overflow: hidden; }
+        .motif { position: absolute; transform: translateX(-50%) scaleX(-1); max-width: none !important; bottom: 0; display: none; filter: brightness(1.1) contrast(1.1); }
     </style>
 </head>
 <body>
-    <div id="version-tag">DESIGN_V5_CONNECTED</div>
-    <div id="bg-glow"></div>
+    <div id="texture-fond"></div>
     <div id="table-line"></div>
     <div id="wall">
         <div class="zone" id="z1"><img id="img1" class="motif"></div>
@@ -37,7 +39,7 @@
     </div>
 
 <script>
-    // CLES CORRIGEES (DOIVENT ETRE IDENTIQUES A LA REMOTE)
+    // CLES OFFICIELLES (Vérifiées et corrigées)
     const SUPABASE_URL = 'https://hpjopidxmkgsswwkqkzr.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwam9waWR4bWtnc3N3d2txa3pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDY4MTIsImV4cCI6MjA5MTQyMjgxMn0.H2Olo613-fsMhJL8Nta6-YdVgMlJapovrVHXwzzZnPs';
     
@@ -46,13 +48,9 @@
 
     function updateView(d) {
         if (!d) return;
-        const id = d.zone_id || d.id;
-        const img = document.getElementById('img' + id);
+        const img = document.getElementById('img' + (d.zone_id || d.id));
         if(!img) return;
-        if(!d.image_url || d.image_url === 'vide') {
-            img.style.display = "none";
-            return;
-        }
+        if(!d.image_url || d.image_url === 'vide') { img.style.display = "none"; return; }
         img.src = d.image_url;
         img.style.display = "block";
         img.style.width = (d.scale || 300) + "px";

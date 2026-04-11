@@ -2,17 +2,16 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Projecteur Tufting - Final</title>
+    <title>Projecteur Tufting - Master</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background: black; margin: 0; overflow: hidden; }
-        /* Le log est invisible maintenant, appuie sur F12 si besoin */
         #debug-log { position: absolute; top: 0; left: 0; font-size: 8px; color: rgba(255,255,255,0.2); z-index: 100; pointer-events: none; }
         #wall { display: flex; width: 100vw; height: 100vh; position: relative; }
         #table-line { position: absolute; width: 100%; border-top: 2px solid red; z-index: 10; bottom: 20%; }
         .zone { position: relative; border: 1px solid #333; height: 100%; display: none; overflow: hidden; }
-        /* scaleX(-1) pour l'effet miroir indispensable au tufting */
-        .motif { position: absolute; transform: translate(-50%, -50%) scaleX(-1); max-width: none !important; }
+        /* L'image est maintenant ancrée par le BAS (bottom) pour coller à la ligne */
+        .motif { position: absolute; transform: translateX(-50%) scaleX(-1); max-width: none !important; bottom: 0; }
     </style>
 </head>
 <body>
@@ -30,6 +29,8 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwam9waWR4bWtnc3N3d2txa3pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDY4MTIsImV4cCI6MjA5MTQyMjgxMn0.H2Olo613-fsMhJL8Nta6-YdVgMlJapovrVHXwzzZnPs';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    let currentTableHeight = 20; // Stockage local de la hauteur pour les images
+
     function updateView(d) {
         const id = d.zone_id || d.id;
         const img = document.getElementById('img' + id);
@@ -42,18 +43,31 @@
             img.style.display = "none";
         }
         
-        // On s'assure que le scale n'est pas à 0
         const size = (d.scale && d.scale > 10) ? d.scale : 300;
         img.style.width = size + "px";
         img.style.left = (d.pos_x || 50) + "%";
-        img.style.top = (d.pos_y || 50) + "%";
+        
+        // --- LOGIQUE AIMANT ---
+        // On calcule la position Y par rapport à la ligne de table
+        // d.pos_y à 50 = posé pile sur la ligne
+        const offset = (d.pos_y - 50); 
+        img.style.bottom = (currentTableHeight + offset) + "%";
+    }
+
+    async function refreshAllImages() {
+        const { data } = await supabaseClient.from('projection_state').select('*');
+        if(data) data.forEach(updateView);
     }
 
     function applySettings(s) {
-        document.getElementById('table-line').style.bottom = (s.table_height || 20) + "%";
+        currentTableHeight = s.table_height || 20;
+        document.getElementById('table-line').style.bottom = currentTableHeight + "%";
+        
+        // On repositionne les images dès que la table bouge
+        refreshAllImages();
+
         const zones = document.querySelectorAll('.zone');
         zones.forEach(z => z.style.display = 'none');
-        
         const l = s.current_layout;
         if(l === '4-small') { 
             zones.forEach(z => { z.style.display='block'; z.style.width='25%'; });
@@ -72,10 +86,8 @@
     }).subscribe();
 
     async function init() {
-        const {data:p} = await supabaseClient.from('projection_state').select('*');
-        if(p) p.forEach(updateView);
         const {data:s} = await supabaseClient.from('app_settings').select('*').limit(1).single();
-        if(s) applySettings(s);
+        if(s) applySettings(s); // applySettings lancera aussi refreshAllImages
     }
     init();
 </script>

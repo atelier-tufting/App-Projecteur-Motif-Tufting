@@ -2,34 +2,27 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>PROJO ATELIER V6</title>
+    <title>PROJO ATELIER FINAL</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background: #000; margin: 0; overflow: hidden; font-family: sans-serif; }
-        
-        /* FOND LAINE ANIMÉ DISCRET */
-        #texture-fond {
-            position: absolute; width: 100%; height: 100%;
-            background-image: url('https://www.transparenttextures.com/patterns/felt.png');
-            opacity: 0.1; z-index: 1;
-            animation: moveBg 20s linear infinite alternate;
-        }
-        @keyframes moveBg { from { transform: scale(1.1) translate(0,0); } to { transform: scale(1.2) translate(10px, 10px); } }
-
-        #wall { display: flex; width: 100vw; height: 100vh; position: relative; z-index: 5; }
-
-        /* LIGNE TABLE BLEUE */
         #table-line { 
             position: absolute; width: 100%; border-top: 3px solid #0033CC; 
-            z-index: 10; bottom: 20%; box-shadow: 0 0 20px rgba(0, 51, 204, 0.8);
+            z-index: 10; bottom: 20%; box-shadow: 0 0 15px #0033CC;
         }
-
-        .zone { position: relative; border-right: 1px solid rgba(255,255,255,0.1); height: 100%; display: none; overflow: hidden; }
-        .motif { position: absolute; transform: translateX(-50%) scaleX(-1); max-width: none !important; bottom: 0; display: none; filter: brightness(1.1) contrast(1.1); }
+        #wall { display: flex; width: 100vw; height: 100vh; position: relative; z-index: 5; }
+        .zone { position: relative; border-right: 1px solid #111; height: 100%; display: none; overflow: hidden; }
+        .motif { position: absolute; transform: translateX(-50%) scaleX(-1); bottom: 0; display: none; }
+        /* Animation de fond très discrète */
+        #bg-anim {
+            position: absolute; width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 50%, #080808 0%, #000 100%);
+            z-index: 1;
+        }
     </style>
 </head>
 <body>
-    <div id="texture-fond"></div>
+    <div id="bg-anim"></div>
     <div id="table-line"></div>
     <div id="wall">
         <div class="zone" id="z1"><img id="img1" class="motif"></div>
@@ -39,49 +32,52 @@
     </div>
 
 <script>
-    // CLES OFFICIELLES (Vérifiées et corrigées)
-    const SUPABASE_URL = 'https://hpjopidxmkgsswwkqkzr.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwam9waWR4bWtnc3N3d2txa3pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDY4MTIsImV4cCI6MjA5MTQyMjgxMn0.H2Olo613-fsMhJL8Nta6-YdVgMlJapovrVHXwzzZnPs';
+    // --- CONFIGURATION SANS ERREUR ---
+    const S_URL = 'https://hpjopidxmkgsswwkqkzr.supabase.co';
+    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwam9waWR4bWtnc3N3d2txa3pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDY4MTIsImV4cCI6MjA5MTQyMjgxMn0.H2Olo613-fsMhJL8Nta6-YdVgMlJapovrVHXwzzZnPs';
     
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    let currentTableHeight = 20;
+    const supabaseClient = supabase.createClient(S_URL, S_KEY);
+    let tableH = 20;
 
     function updateView(d) {
-        if (!d) return;
-        const img = document.getElementById('img' + (d.zone_id || d.id));
+        const id = d.zone_id || d.id;
+        const img = document.getElementById('img' + id);
         if(!img) return;
         if(!d.image_url || d.image_url === 'vide') { img.style.display = "none"; return; }
         img.src = d.image_url;
         img.style.display = "block";
         img.style.width = (d.scale || 300) + "px";
         img.style.left = (d.pos_x || 50) + "%";
-        img.style.bottom = (currentTableHeight + (d.pos_y - 50)) + "%";
+        img.style.bottom = (tableH + (d.pos_y - 50)) + "%";
     }
 
     async function applySettings(s) {
-        if (!s) return;
-        currentTableHeight = parseInt(s.table_height || 20);
-        document.getElementById('table-line').style.bottom = currentTableHeight + "%";
+        if(!s) return;
+        tableH = parseInt(s.table_height || 20);
+        document.getElementById('table-line').style.bottom = tableH + "%";
         const zones = document.querySelectorAll('.zone');
         zones.forEach(z => z.style.display = 'none');
         const l = s.current_layout;
-        if(l === '1-xl') { zones[0].style.display='block'; zones[0].style.width='100%'; } 
-        else if(l === '2-med') { zones[0].style.display='block'; zones[0].style.width='50%'; zones[1].style.display='block'; zones[1].style.width='50%'; } 
-        else if(l === '1-med-2-small') { zones[0].style.display='block'; zones[0].style.width='50%'; zones[1].style.display='block'; zones[1].style.width='25%'; zones[2].style.display='block'; zones[2].style.width='25%'; } 
+        if(l === '1-xl') { zones[0].style.display='block'; zones[0].style.width='100%'; }
+        else if(l === '2-med') { zones[0].style.display='block'; zones[0].style.width='50%'; zones[1].style.display='block'; zones[1].style.width='50%'; }
+        else if(l === '1-med-2-small') { zones[0].style.display='block'; zones[0].style.width='50%'; zones[1].style.display='block'; zones[1].style.width='25%'; zones[2].style.display='block'; zones[2].style.width='25%'; }
         else if(l === '4-small') { zones.forEach(z => { z.style.display='block'; z.style.width='25%'; }); }
         const {data} = await supabaseClient.from('projection_state').select('*');
         if(data) data.forEach(updateView);
     }
 
-    supabaseClient.channel('db_changes').on('postgres_changes', {event:'*', schema:'public'}, (p) => {
-        if(p.table === 'app_settings') applySettings(p.new);
-        if(p.table === 'projection_state') updateView(p.new);
-    }).subscribe();
-
+    // Récupération initiale
     async function init() {
-        const {data:s} = await supabaseClient.from('app_settings').select('*').limit(1).single();
-        if(s) applySettings(s);
+        const {data: settings} = await supabaseClient.from('app_settings').select('*').limit(1).single();
+        if(settings) applySettings(settings);
     }
+
+    // Temps réel
+    supabaseClient.channel('custom-all-channel')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'app_settings' }, payload => applySettings(payload.new))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'projection_state' }, payload => updateView(payload.new))
+    .subscribe();
+
     init();
 </script>
 </body>

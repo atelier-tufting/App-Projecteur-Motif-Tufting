@@ -1,14 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Projecteur - Atelier Tufting</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --brand-blue: #0033CC;
+            --brand-gold: #FFD700;
+        }
+
+        body { 
+            background: black; 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: sans-serif;
+        }
+
+        #wall { 
+            display: flex; 
+            width: 100vw; 
+            height: 100vh; 
+            position: relative; 
+        }
+
+        /* La ligne de table est maintenant à ta couleur Bleue */
+        #table-line { 
+            position: absolute; 
+            width: 100%; 
+            border-top: 3px solid var(--brand-blue); 
+            z-index: 10; 
+            bottom: 20%;
+            box-shadow: 0 0 10px rgba(0, 51, 204, 0.5);
+        }
+
+        /* Petit label pour la ligne */
+        #table-line::after {
+            content: "LIMITE TABLE";
+            position: absolute;
+            right: 10px;
+            top: -15px;
+            color: var(--brand-blue);
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .zone { 
+            position: relative; 
+            border-right: 1px solid rgba(255, 255, 255, 0.1); 
+            height: 100%; 
+            display: none; 
+            overflow: hidden; 
+        }
+
+        /* Effet miroir indispensable */
+        .motif { 
+            position: absolute; 
+            transform: translateX(-50%) scaleX(-1); 
+            max-width: none !important; 
+            bottom: 0; 
+            display: none;
+        }
+
+        /* Logo en filigrane discret pour le branding */
+        #watermark {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 100px;
+            opacity: 0.15;
+            z-index: 5;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <img id="watermark" src="https://tuftingatelier.fr/cdn/shop/files/atelier_tufting_logoo-removebg-preview_1_84cb01dc-754c-427d-97c1-98bb8fc97213.png?height=72&v=1760374452">
+    <div id="table-line"></div>
+    <div id="wall">
+        <div class="zone" id="z1"><img id="img1" class="motif"></div>
+        <div class="zone" id="z2"><img id="img2" class="motif"></div>
+        <div class="zone" id="z3"><img id="img3" class="motif"></div>
+        <div class="zone" id="z4"><img id="img4" class="motif"></div>
+    </div>
+
 <script>
-    // ... Garde tes clés Supabase ...
+    const SUPABASE_URL = 'https://hpjopidxmkgsswwkqkzr.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwam9waWR4bWtnc3N3d2txa3pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDY4MTIsImV4cCI6MjA5MTQyMjgxMn0.H2Olo613-fsMhJL8Nta6-YdVgMlJapovrVHXwzzZnPs';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let currentTableHeight = 20;
 
     function updateView(d) {
-        const id = d.zone_id;
+        const id = d.zone_id || d.id;
         const img = document.getElementById('img' + id);
         if(!img) return;
 
-        // Si Reset ou vide
         if(!d.image_url || d.image_url === 'vide') {
             img.style.display = "none";
             return;
@@ -19,36 +107,47 @@
         img.style.width = (d.scale || 300) + "px";
         img.style.left = (d.pos_x || 50) + "%";
         
-        // --- ALIGNEMENT TABLE ---
-        // L'image est ancrée en bas. 
-        // Si pos_y = 50, elle touche la ligne rouge.
         const offsetY = (d.pos_y - 50);
         img.style.bottom = (currentTableHeight + offsetY) + "%";
+        img.style.top = "auto"; 
     }
 
-    // Fonction pour tout recalculer quand la table bouge
-    async function syncAll() {
-        const { data } = await supabaseClient.from('projection_state').select('*');
+    async function applySettings(s) {
+        currentTableHeight = parseInt(s.table_height || 20);
+        document.getElementById('table-line').style.bottom = currentTableHeight + "%";
+        
+        const zones = document.querySelectorAll('.zone');
+        zones.forEach(z => z.style.display = 'none');
+        
+        const l = s.current_layout;
+        if(l === '1-xl') { 
+            zones[0].style.display='block'; zones[0].style.width='100%'; 
+        } else if(l === '2-med') { 
+            zones[0].style.display='block'; zones[0].style.width='50%'; 
+            zones[1].style.display='block'; zones[1].style.width='50%'; 
+        } else if(l === '1-med-2-small') { 
+            zones[0].style.display='block'; zones[0].style.width='50%'; 
+            zones[1].style.display='block'; zones[1].style.width='25%'; 
+            zones[2].style.display='block'; zones[2].style.width='25%'; 
+        } else if(l === '4-small') { 
+            zones.forEach(z => { z.style.display='block'; z.style.width='25%'; });
+        }
+
+        // Rafraîchir les images après changement de layout
+        const {data} = await supabaseClient.from('projection_state').select('*');
         if(data) data.forEach(updateView);
     }
 
-    supabaseClient.channel('any').on('postgres_changes', {event:'*', schema:'public'}, (p) => {
-        if(p.table === 'app_settings') {
-            currentTableHeight = parseInt(p.new.table_height);
-            document.getElementById('table-line').style.bottom = currentTableHeight + "%";
-            syncAll(); // Magie : les images suivent la ligne
-        }
+    supabaseClient.channel('projo').on('postgres_changes', {event:'*', schema:'public'}, (p) => {
+        if(p.table === 'app_settings') applySettings(p.new);
         if(p.table === 'projection_state') updateView(p.new);
     }).subscribe();
 
-    // Initialisation
     async function init() {
         const {data:s} = await supabaseClient.from('app_settings').select('*').limit(1).single();
-        if(s) {
-            currentTableHeight = s.table_height;
-            document.getElementById('table-line').style.bottom = currentTableHeight + "%";
-            syncAll();
-        }
+        if(s) applySettings(s);
     }
     init();
 </script>
+</body>
+</html>

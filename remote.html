@@ -2,33 +2,57 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Télécommande Tufting</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Remote V3 - Atelier Tufting</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #111; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        button { padding: 20px; font-size: 18px; border: none; border-radius: 10px; background: #333; color: white; touch-action: manipulation; }
-        button:active { background: #555; }
-        .zone-selector { background: #007bff; grid-column: span 2; }
-        .control-panel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .big { grid-column: span 3; background: #28a745; }
+        body { background: #111; color: #eee; font-family: system-ui; padding: 10px; margin: 0; text-align: center; }
+        .group { background: #222; padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #333; }
+        .label { font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 10px; display: block; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        button { background: #333; color: white; border: none; padding: 15px 5px; border-radius: 10px; font-weight: 600; font-size: 13px; }
+        button:active { background: #444; }
+        .active { background: #007bff !important; }
+        .d-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 240px; margin: 10px auto; }
+        .btn-ctrl { background: #333; font-size: 20px; aspect-ratio: 1; border-radius: 50%; }
+        .btn-img { background: #28a745; width: 100%; padding: 20px; border-radius: 12px; margin-top: 10px; font-size: 16px; }
     </style>
 </head>
 <body>
-    <h2>Cadre Actif : <span id="zoneNum">1</span></h2>
-    
-    <div class="grid">
-        <button class="zone-selector" onclick="setZone(1)">SÉLECTIONNER CADRE 1</button>
-        <button class="zone-selector" onclick="setZone(2)">SÉLECTIONNER CADRE 2</button>
+
+    <div class="group">
+        <span class="label">Disposition du Mur</span>
+        <button id="l4" style="width:100%; margin-bottom:8px" onclick="setLayout('4-small', 'l4')">4 PETITS (40cm)</button>
+        <button id="l12" style="width:100%; margin-bottom:8px" onclick="setLayout('1-med-2-small', 'l12')">1 MOYEN + 2 PETITS</button>
+        <button id="lxl" style="width:100%" onclick="setLayout('1-xl', 'lxl')">1 XXL (150cm)</button>
     </div>
 
-    <div class="control-panel">
-        <div></div><button onclick="move(0, -2)">↑</button><div></div>
-        <button onclick="move(-2, 0)">←</button><button onclick="move(0, 2)">↓</button><button onclick="move(2, 0)">→</button>
-        <button onclick="zoom(0.9)">ZOOM -</button><div></div><button onclick="zoom(1.1)">ZOOM +</button>
-        <button class="big" onclick="updateImage()">CHANGER IMAGE (URL)</button>
+    <div class="group">
+        <span class="label">Position de la Table</span>
+        <input type="range" min="0" max="80" value="20" style="width:100%" oninput="updateTable(this.value)">
     </div>
+
+    <div class="group">
+        <span class="label">Sélection Cadre</span>
+        <div class="grid">
+            <button id="z1" class="active" onclick="setZone(1)">Z1</button>
+            <button id="z2" onclick="setZone(2)">Z2</button>
+            <button id="z3" onclick="setZone(3)">Z3</button>
+            <button id="z4" onclick="setZone(4)">Z4</button>
+        </div>
+    </div>
+
+    <div class="d-pad">
+        <div></div><button class="btn-ctrl" onclick="move(0,-2)">↑</button><div></div>
+        <button class="btn-ctrl" onclick="move(-2,0)">←</button>
+        <button class="btn-ctrl" style="font-size:10px" onclick="reset()">RESET</button>
+        <button class="btn-ctrl" onclick="move(2,0)">→</button>
+        <button class="btn-ctrl" onclick="zoom(0.9)">-</button>
+        <button class="btn-ctrl" onclick="move(0,2)">↓</button>
+        <button class="btn-ctrl" onclick="zoom(1.1)">+</button>
+    </div>
+
+    <button class="btn-img" onclick="changeImage()">CHOISIR IMAGE</button>
 
 <script>
     const SUPABASE_URL = 'https://hpjopidxmkgsswwkqkzr.supabase.co';
@@ -36,42 +60,35 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let currentZone = 1;
-    let state = { pos_x: 50, pos_y: 50, scale: 300, image_url: "" };
+    let state = { pos_x:50, pos_y:50, scale:300 };
 
     function setZone(id) {
         currentZone = id;
-        document.getElementById('zoneNum').innerText = id;
+        document.querySelectorAll('.grid button').forEach(b => b.classList.remove('active'));
+        document.getElementById('z'+id).classList.add('active');
     }
 
-    async function sendUpdate() {
-        await supabaseClient
-            .from('projection_state')
-            .upsert({ 
-                zone_id: currentZone, 
-                pos_x: state.pos_x, 
-                pos_y: state.pos_y, 
-                scale: Math.round(state.scale),
-                image_url: state.image_url 
-            }, { onConflict: 'zone_id' });
+    async function move(x,y) { state.pos_x+=x; state.pos_y+=y; send(); }
+    async function zoom(f) { state.scale*=f; send(); }
+    async function reset() { state = {pos_x:50, pos_y:50, scale:300}; send(); }
+    
+    async function send() {
+        await supabaseClient.from('projection_state').upsert({ zone_id:currentZone, ...state }, {onConflict:'zone_id'});
     }
 
-    function move(x, y) {
-        state.pos_x += x;
-        state.pos_y += y;
-        sendUpdate();
+    async function setLayout(l, btnId) {
+        document.querySelectorAll('.group button').forEach(b => b.classList.remove('active'));
+        document.getElementById(btnId).classList.add('active');
+        await supabaseClient.from('app_settings').update({ current_layout: l }).eq('id', 1);
     }
 
-    function zoom(factor) {
-        state.scale *= factor;
-        sendUpdate();
+    async function updateTable(val) {
+        await supabaseClient.from('app_settings').update({ table_height: val }).eq('id', 1);
     }
 
-    function updateImage() {
-        const url = prompt("Colle l'URL de l'image :");
-        if(url) {
-            state.image_url = url;
-            sendUpdate();
-        }
+    function changeImage() {
+        const url = prompt("Lien de l'image (Notion ou Google) :");
+        if(url) { state.image_url = url; send(); }
     }
 </script>
 </body>

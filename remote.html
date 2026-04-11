@@ -10,19 +10,8 @@
         body { background: var(--brand-bg); color: var(--dark-grey); font-family: system-ui; padding: 10px; margin: 0; text-align: center; }
         .header-logo { width: 150px; margin: 10px auto; display: block; }
         
-        /* SECTION SELECTION CLIENT */
         .notion-box { background: var(--brand-blue); padding: 15px; border-radius: 20px; margin-bottom: 15px; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        .notion-box select { 
-            width: 100%; 
-            padding: 12px; 
-            border-radius: 10px; 
-            border: none; 
-            font-size: 14px; 
-            font-weight: bold; 
-            margin-top: 10px; 
-            background: white; 
-            color: var(--brand-blue);
-        }
+        .notion-box select { width: 100%; padding: 12px; border-radius: 10px; border: none; font-size: 14px; font-weight: bold; margin-top: 10px; background: white; color: var(--brand-blue); }
 
         .status-bar { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 10px; margin-bottom: 10px; color: var(--brand-blue); font-weight: bold; }
         .dot { width: 8px; height: 8px; background: #ff4d4d; border-radius: 50%; }
@@ -30,7 +19,6 @@
         
         .group { background: white; padding: 15px; border-radius: 20px; margin-bottom: 10px; border: 1px solid rgba(0,51,204,0.1); }
         .label { font-size: 11px; color: var(--brand-blue); text-transform: uppercase; margin-bottom: 10px; display: block; font-weight: 900; }
-        
         .layout-grid { display: flex; gap: 5px; }
         .layout-grid button { flex: 1; padding: 10px 5px; background: #eee; border: none; border-radius: 10px; color: var(--brand-blue); font-size: 10px; font-weight: bold; }
         .layout-grid button.active-layout { background: var(--brand-blue); color: white; }
@@ -43,8 +31,8 @@
         
         .zone-btn { background: #eee; border: 3px solid transparent; border-radius: 12px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
         .zone-btn.active { border-color: var(--brand-gold); background: white; }
-        .zone-btn img { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; position: absolute; }
-        .zone-btn span { z-index: 2; font-weight: bold; font-size: 12px; color: var(--brand-blue); text-shadow: 0 0 5px white; }
+        .zone-btn img { width: 100%; height: 100%; object-fit: cover; opacity: 0.4; position: absolute; }
+        .zone-btn span { z-index: 2; font-weight: bold; font-size: 12px; color: var(--brand-blue); }
         
         .d-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 220px; margin: 10px auto; }
         .btn-ctrl { background: var(--brand-blue); aspect-ratio: 1; border-radius: 50%; color: white; font-size: 20px; border: none; display: flex; align-items: center; justify-content: center; }
@@ -104,7 +92,7 @@
         <input type="range" id="table-slider" min="0" max="80" value="20" oninput="updateTable(this.value)">
     </div>
 
-    <button class="btn-img" onclick="changeImage()">LIEN MANUEL (URGENCE)</button>
+    <button class="btn-img" onclick="changeImage()">CHANGER L'IMAGE (LIEN)</button>
 
 <script>
     const SUPABASE_URL = 'https://hpjopidxmkgsswwkqkzr.supabase.co';
@@ -127,7 +115,7 @@
                 let key = `${c.creneau}-${c.nom}`;
                 counts[key] = (counts[key] || 0) + 1;
                 let motifNum = counts[key] > 1 ? ` (n°${counts[key]})` : '';
-                opt.text = `🖼️ ${c.creneau || '??'} | ${c.nom}${motifNum}`;
+                opt.text = `${c.creneau || '??'} | ${c.nom}${motifNum}`;
                 select.appendChild(opt);
             });
         }
@@ -174,10 +162,10 @@
         const prev = document.getElementById('prev' + currentZone);
         if(localStates[currentZone].image_url && localStates[currentZone].image_url !== 'vide') {
             prev.src = localStates[currentZone].image_url;
-            prev.style.display = "block";
+            prev.style.opacity = "0.4";
         } else {
             prev.src = "";
-            prev.style.display = "none";
+            prev.style.opacity = "0";
         }
     }
 
@@ -191,10 +179,9 @@
         const { data } = await supabaseClient.from('projection_state').select('*');
         if(data) data.forEach(d => {
             localStates[d.zone_id] = d;
-            const prev = document.getElementById('prev' + d.zone_id);
             if(d.image_url && d.image_url !== 'vide') {
-                prev.src = d.image_url;
-                prev.style.display = "block";
+                document.getElementById('prev' + d.zone_id).src = d.image_url;
+                document.getElementById('prev' + d.zone_id).style.opacity = "0.4";
             }
         });
         checkConn();

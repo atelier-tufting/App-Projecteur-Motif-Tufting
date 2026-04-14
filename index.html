@@ -8,8 +8,8 @@
         body { background: black; margin: 0; overflow: hidden; }
         #wall { display: flex; width: 100vw; height: 100vh; position: relative; }
         #table-line { position: absolute; width: 100%; border-top: 2px solid #0033CC; z-index: 10; bottom: 20%; }
-        .zone { position: relative; border-right: 1px solid #111; height: 100%; display: none; overflow: hidden; }
-        .motif { position: absolute; transform: translateX(-50%) scaleX(-1); max-width: none !important; bottom: 0; display: none; }
+        .zone { position: relative; border-right: 1px solid #111; height: 100%; display: none; overflow: hidden; perspective: 1000px; /* Ajout de la profondeur pour la perspective 3D */ }
+        .motif { position: absolute; max-width: none !important; bottom: 0; display: none; transition: transform 0.2s ease; /* Fluidité des mouvements */ }
     </style>
 </head>
 <body>
@@ -34,11 +34,24 @@
         const img = document.getElementById('img' + id);
         if(!img) return;
         if(!d.image_url || d.image_url === 'vide') { img.style.display = "none"; return; }
+        
         img.src = d.image_url;
         img.style.display = "block";
         img.style.width = (d.scale || 300) + "px";
         img.style.left = (d.pos_x || 50) + "%";
         img.style.bottom = (currentTableHeight + (d.pos_y - 50)) + "%";
+
+        // --- NOUVELLE LOGIQUE DE DÉFORMATION ---
+        const rot = d.rotation || 0;
+        const px = d.persp_x || 0; // Inclinaison Haut/Bas
+        const py = d.persp_y || 0; // Inclinaison Gauche/Droite
+        
+        // On combine : 
+        // 1. Centrage (-50%) 
+        // 2. Flip horizontal indispensable (scaleX -1)
+        // 3. Rotation
+        // 4. Perspective 3D (rotateX et rotateY)
+        img.style.transform = `translateX(-50%) scaleX(-1) rotate(${rot}deg) rotateX(${px}deg) rotateY(${py}deg)`;
     }
 
     async function applySettings(s) {

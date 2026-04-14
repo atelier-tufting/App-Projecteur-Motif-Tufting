@@ -35,8 +35,10 @@
         .zone-btn span { z-index: 2; font-weight: bold; font-size: 12px; color: var(--brand-blue); }
         
         .d-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 220px; margin: 10px auto; }
+        .adj-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 5px; }
         .btn-ctrl { background: var(--brand-blue); aspect-ratio: 1; border-radius: 50%; color: white; font-size: 20px; border: none; display: flex; align-items: center; justify-content: center; }
-        .btn-reset { background: #ff4d4d !important; font-size: 10px !important; }
+        .btn-small { background: #eee; color: var(--brand-blue); border-radius: 10px; padding: 8px; font-size: 14px; border: none; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        .btn-reset { background: #ff4d4d !important; font-size: 10px !important; color: white !important; }
         
         input[type=range] { width: 100%; accent-color: var(--brand-blue); }
         .btn-img { background: var(--brand-blue); width: 100%; padding: 15px; border-radius: 15px; font-size: 16px; color: var(--brand-gold); font-weight: 900; border: none; margin-top: 5px; }
@@ -75,15 +77,30 @@
     </div>
 
     <div class="group">
-        <span class="label">3. Ajuster</span>
+        <span class="label">3. Navigation & Zoom</span>
         <div class="d-pad">
             <div></div><button class="btn-ctrl" onclick="move(0,-2)">↑</button><div></div>
             <button class="btn-ctrl" onclick="move(-2,0)">←</button>
-            <button class="btn-ctrl btn-reset" onclick="reset()">RESET</button>
+            <button class="btn-ctrl btn-reset" onclick="reset()">RESET TOTAL</button>
             <button class="btn-ctrl" onclick="move(2,0)">→</button>
             <button class="btn-ctrl" onclick="zoom(0.9)">-</button>
             <button class="btn-ctrl" onclick="move(0,2)">↓</button>
             <button class="btn-ctrl" onclick="zoom(1.1)">+</button>
+        </div>
+    </div>
+
+    <div class="group">
+        <span class="label">4. Ajustements Avancés</span>
+        <div class="adj-grid">
+            <button class="btn-small" onclick="rotate(-2)">↺</button>
+            <button class="btn-small btn-reset" onclick="resetDef()">RESET ADJ.</button>
+            <button class="btn-small" onclick="rotate(2)">↻</button>
+            <button class="btn-small" onclick="perspective('Y', -2)">◧</button>
+            <span style="font-size: 9px; align-self: center; font-weight: bold; color:#666">PERSPECTIVE</span>
+            <button class="btn-small" onclick="perspective('Y', 2)">◨</button>
+            <button class="btn-small" onclick="perspective('X', 2)">⌗↑</button>
+            <div></div>
+            <button class="btn-small" onclick="perspective('X', -2)">⌗↓</button>
         </div>
     </div>
 
@@ -100,7 +117,9 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     let currentZone = 1;
-    let localStates = { 1:{pos_x:50,pos_y:50,scale:300,image_url:'vide'}, 2:{pos_x:50,pos_y:50,scale:300,image_url:'vide'}, 3:{pos_x:50,pos_y:50,scale:300,image_url:'vide'}, 4:{pos_x:50,pos_y:50,scale:300,image_url:'vide'} };
+    // Ajout des valeurs de rotation et perspective par défaut
+    let defaultState = {pos_x:50,pos_y:50,scale:300,rotation:0,persp_x:0,persp_y:0,image_url:'vide'};
+    let localStates = { 1:{...defaultState}, 2:{...defaultState}, 3:{...defaultState}, 4:{...defaultState} };
 
     async function fetchClients() {
         const { data } = await supabaseClient.from('liste_clients').select('*').order('creneau', { ascending: true });
@@ -171,14 +190,30 @@
 
     function move(x,y) { localStates[currentZone].pos_x+=x; localStates[currentZone].pos_y+=y; send(); }
     function zoom(f) { localStates[currentZone].scale*=f; send(); }
-    function reset() { localStates[currentZone] = {pos_x:50,pos_y:50,scale:300,image_url:'vide'}; send(); }
+    
+    // Nouvelles fonctions de déformation
+    function rotate(deg) { localStates[currentZone].rotation = (localStates[currentZone].rotation || 0) + deg; send(); }
+    function perspective(axis, val) { 
+        if(axis === 'X') localStates[currentZone].persp_x = (localStates[currentZone].persp_x || 0) + val;
+        if(axis === 'Y') localStates[currentZone].persp_y = (localStates[currentZone].persp_y || 0) + val;
+        send(); 
+    }
+    
+    function reset() { localStates[currentZone] = {...defaultState, image_url: localStates[currentZone].image_url}; send(); }
+    function resetDef() { 
+        localStates[currentZone].rotation = 0; 
+        localStates[currentZone].persp_x = 0; 
+        localStates[currentZone].persp_y = 0; 
+        send(); 
+    }
+
     async function updateTable(val) { await supabaseClient.from('app_settings').update({ table_height: parseInt(val) }).eq('id', 1); }
     function changeImage() { const url = prompt("Lien image :"); if(url !== null) { localStates[currentZone].image_url = url ? url : 'vide'; send(); } }
 
     async function init() {
         const { data } = await supabaseClient.from('projection_state').select('*');
         if(data) data.forEach(d => {
-            localStates[d.zone_id] = d;
+            localStates[d.zone_id] = {...defaultState, ...d};
             if(d.image_url && d.image_url !== 'vide') {
                 document.getElementById('prev' + d.zone_id).src = d.image_url;
                 document.getElementById('prev' + d.zone_id).style.opacity = "0.4";

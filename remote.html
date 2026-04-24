@@ -8,67 +8,47 @@
     <style>
         :root { --brand-blue: #0033CC; --brand-gold: #FFD700; --brand-bg: #FDF2D5; --dark-grey: #222; }
         body { background: var(--brand-bg); color: var(--dark-grey); font-family: system-ui; padding: 10px; margin: 0; text-align: center; }
-        .header-logo { width: 150px; margin: 10px auto; display: block; }
-        
-        .notion-box { background: var(--brand-blue); padding: 15px; border-radius: 20px; margin-bottom: 15px; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        .notion-box select { width: 100%; padding: 12px; border-radius: 10px; border: none; font-size: 14px; font-weight: bold; margin-top: 10px; background: white; color: var(--brand-blue); }
-
-        .status-bar { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 10px; margin-bottom: 10px; color: var(--brand-blue); font-weight: bold; }
-        .dot { width: 8px; height: 8px; background: #ff4d4d; border-radius: 50%; }
-        .dot.online { background: #28a745; box-shadow: 0 0 8px #28a745; }
-        
-        .group { background: white; padding: 15px; border-radius: 20px; margin-bottom: 10px; border: 1px solid rgba(0,51,204,0.1); }
-        .label { font-size: 11px; color: var(--brand-blue); text-transform: uppercase; margin-bottom: 10px; display: block; font-weight: 900; }
+        .header-logo { width: 120px; margin: 5px auto; display: block; }
+        .notion-box { background: var(--brand-blue); padding: 12px; border-radius: 15px; margin-bottom: 10px; color: white; }
+        .notion-box select { width: 100%; padding: 10px; border-radius: 8px; border: none; font-size: 14px; margin-top: 5px; }
+        .group { background: white; padding: 12px; border-radius: 15px; margin-bottom: 10px; border: 1px solid rgba(0,51,204,0.1); }
+        .label { font-size: 10px; color: var(--brand-blue); text-transform: uppercase; margin-bottom: 8px; display: block; font-weight: 900; }
         .layout-grid { display: flex; gap: 5px; }
-        .layout-grid button { flex: 1; padding: 10px 5px; background: #eee; border: none; border-radius: 10px; color: var(--brand-blue); font-size: 10px; font-weight: bold; }
+        .layout-grid button { flex: 1; padding: 8px 2px; background: #eee; border: none; border-radius: 8px; color: var(--brand-blue); font-size: 9px; font-weight: bold; }
         .layout-grid button.active-layout { background: var(--brand-blue); color: white; }
-        
-        #zone-selector { display: grid; gap: 8px; transition: 0.3s; }
+        #zone-selector { display: grid; gap: 8px; }
         .layout-4-small { grid-template-columns: repeat(4, 1fr); }
         .layout-2-med { grid-template-columns: repeat(2, 1fr); }
         .layout-1-med-2-small { grid-template-columns: 2fr 1fr 1fr; }
         .layout-1-xl { grid-template-columns: 1fr; }
-        
-        .zone-btn { background: #eee; border: 3px solid transparent; border-radius: 12px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+        .zone-btn { background: #eee; border: 3px solid transparent; border-radius: 10px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
         .zone-btn.active { border-color: var(--brand-gold); background: white; }
         .zone-btn img { width: 100%; height: 100%; object-fit: cover; opacity: 0.4; position: absolute; }
-        .zone-btn span { z-index: 2; font-weight: bold; font-size: 12px; color: var(--brand-blue); }
-        
-        .d-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 220px; margin: 10px auto; }
-        .adj-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 5px; }
-        .btn-ctrl { background: var(--brand-blue); aspect-ratio: 1; border-radius: 50%; color: white; font-size: 20px; border: none; display: flex; align-items: center; justify-content: center; }
-        .btn-small { background: #eee; color: var(--brand-blue); border-radius: 10px; padding: 8px; font-size: 14px; border: none; font-weight: bold; display: flex; align-items: center; justify-content: center; }
-        .btn-reset { background: #ff4d4d !important; font-size: 10px !important; color: white !important; }
-        
+        .d-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 200px; margin: 0 auto; }
+        .btn-ctrl { background: var(--brand-blue); aspect-ratio: 1; border-radius: 50%; color: white; font-size: 18px; border: none; display: flex; align-items: center; justify-content: center; }
+        .btn-small { background: #eee; color: var(--brand-blue); border-radius: 8px; padding: 6px; font-size: 12px; border: none; font-weight: bold; }
+        .btn-img { background: var(--brand-blue); width: 100%; padding: 12px; border-radius: 12px; font-size: 14px; color: white; font-weight: 900; border: none; margin-top: 5px; }
         input[type=range] { width: 100%; accent-color: var(--brand-blue); }
-        .btn-img { background: var(--brand-blue); width: 100%; padding: 15px; border-radius: 15px; font-size: 16px; color: var(--brand-gold); font-weight: 900; border: none; margin-top: 5px; }
+        .btn-clear { background: #ff4d4d !important; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <img src="https://tuftingatelier.fr/cdn/shop/files/atelier_tufting_logoo-removebg-preview_1_84cb01dc-754c-427d-97c1-98bb8fc97213.png?height=72&v=1760374452" class="header-logo">
+    <img src="https://tuftingatelier.fr/cdn/shop/files/atelier_tufting_logoo-removebg-preview_1_84cb01dc-754c-427d-97c1-98bb8fc97213.png" class="header-logo">
     
     <div class="notion-box">
-        <span style="font-size: 10px; font-weight: 900; letter-spacing: 1px;">SÉLECTEUR DE MOTIFS</span>
-        <select id="client-list" onchange="loadMotif(this.value)">
-            <option value="">Chargement...</option>
-        </select>
+        <span style="font-size: 9px; font-weight: 900;">SÉLECTEUR DE MOTIFS</span>
+        <select id="client-list" onchange="loadMotif(this.value)"><option>Chargement...</option></select>
     </div>
 
-    <div class="status-bar"><div id="status-dot" class="dot"></div><span id="status-text">PROJO DÉCONNECTÉ</span></div>
-    
     <div class="group">
-        <span class="label">1. Disposition</span>
+        <span class="label">Disposition & Zone</span>
         <div class="layout-grid">
             <button id="btn-1-xl" onclick="setLayout('1-xl')">XXL</button>
             <button id="btn-2-med" onclick="setLayout('2-med')">2 MOYENS</button>
             <button id="btn-1-med-2-small" onclick="setLayout('1-med-2-small')">MIXTE</button>
             <button id="btn-4-small" onclick="setLayout('4-small')">4 PETITS</button>
         </div>
-    </div>
-
-    <div class="group">
-        <span class="label">2. Sélectionner le Cadre</span>
-        <div id="zone-selector" class="layout-4-small">
+        <div id="zone-selector" class="layout-4-small" style="margin-top:10px">
             <button id="z1" class="zone-btn active" onclick="setZone(1)"><img id="prev1"><span>Z1</span></button>
             <button id="z2" class="zone-btn" onclick="setZone(2)"><img id="prev2"><span>Z2</span></button>
             <button id="z3" class="zone-btn" onclick="setZone(3)"><img id="prev3"><span>Z3</span></button>
@@ -77,31 +57,36 @@
     </div>
 
     <div class="group">
-        <span class="label">3. Navigation & Zoom</span>
+        <span class="label">Navigation Précise</span>
         <div class="d-pad">
-            <div></div><button class="btn-ctrl" onclick="move(0,-2)">↑</button><div></div>
-            <button class="btn-ctrl" onclick="move(-2,0)">←</button>
-            <button class="btn-ctrl btn-reset" onclick="reset()">RESET TOTAL</button>
-            <button class="btn-ctrl" onclick="move(2,0)">→</button>
-            <button class="btn-ctrl" onclick="zoom(0.9)">-</button>
-            <button class="btn-ctrl" onclick="move(0,2)">↓</button>
-            <button class="btn-ctrl" onclick="zoom(1.1)">+</button>
+            <div></div><button class="btn-ctrl" onclick="move(0,-0.5)">↑</button><div></div>
+            <button class="btn-ctrl" onclick="move(-0.5,0)">←</button>
+            <button class="btn-ctrl" style="background:#ff4d4d; font-size:9px" onclick="reset()">RESET</button>
+            <button class="btn-ctrl" onclick="move(0.5,0)">→</button>
+            <button class="btn-ctrl" onclick="zoom(0.98)">-</button>
+            <button class="btn-ctrl" onclick="move(0,0.5)">↓</button>
+            <button class="btn-ctrl" onclick="zoom(1.02)">+</button>
         </div>
     </div>
 
     <div class="group">
-        <span class="label">4. Ajustements Avancés</span>
-        <div class="adj-grid">
-            <button class="btn-small" onclick="rotate(-2)">↺</button>
-            <button class="btn-small btn-reset" onclick="resetDef()">RESET ADJ.</button>
-            <button class="btn-small" onclick="rotate(2)">↻</button>
-            <button class="btn-small" onclick="perspective('Y', -2)">◧</button>
-            <span style="font-size: 9px; align-self: center; font-weight: bold; color:#666">PERSPECTIVE</span>
-            <button class="btn-small" onclick="perspective('Y', 2)">◨</button>
-            <button class="btn-small" onclick="perspective('X', 2)">⌗↑</button>
-            <div></div>
-            <button class="btn-small" onclick="perspective('X', -2)">⌗↓</button>
+        <span class="label">Ajustements Avancés</span>
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:5px;">
+            <button class="btn-small" onclick="rotate(-0.5)">↺</button>
+            <button class="btn-small" onclick="perspective('X', 0.5)">⌗↑</button>
+            <button class="btn-small" onclick="rotate(0.5)">↻</button>
+            <button class="btn-small" onclick="perspective('Y', -0.5)">◧</button>
+            <button class="btn-small" style="font-size:8px" onclick="resetDef()">RESET 3D</button>
+            <button class="btn-small" onclick="perspective('Y', 0.5)">◨</button>
         </div>
+    </div>
+
+    <div class="group">
+        <span class="label">Actions Image</span>
+        <input type="file" id="file-upload" accept="image/*" style="display:none" onchange="uploadImage(this)">
+        <button class="btn-img" style="background:#28a745" onclick="document.getElementById('file-upload').click()">📤 UPLOADER SCREENSHOT</button>
+        <button class="btn-img" onclick="changeImage()">🔗 LIEN URL</button>
+        <button class="btn-img btn-clear" onclick="clearZone()">🗑️ VIDER LA ZONE</button>
     </div>
 
     <div class="group">
@@ -109,52 +94,54 @@
         <input type="range" id="table-slider" min="0" max="80" value="20" oninput="updateTable(this.value)">
     </div>
 
-    <button class="btn-img" onclick="changeImage()">CHANGER L'IMAGE (LIEN)</button>
-
 <script>
     const SUPABASE_URL = 'https://hpjopidxmkgsswwkqkzr.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwam9waWR4bWtnc3N3d2txa3pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDY4MTIsImV4cCI6MjA5MTQyMjgxMn0.H2Olo613-fsMhJL8Nta6-YdVgMlJapovrVHXwzzZnPs';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     let currentZone = 1;
-    // Ajout des valeurs de rotation et perspective par défaut
     let defaultState = {pos_x:50,pos_y:50,scale:300,rotation:0,persp_x:0,persp_y:0,image_url:'vide'};
     let localStates = { 1:{...defaultState}, 2:{...defaultState}, 3:{...defaultState}, 4:{...defaultState} };
 
     async function fetchClients() {
-        const { data } = await supabaseClient.from('liste_clients').select('*').order('creneau', { ascending: true });
+        const { data } = await supabaseClient.from('liste_clients').select('*').order('creneau', { ascending: true }).order('nom', { ascending: true });
         const select = document.getElementById('client-list');
         select.innerHTML = '<option value="">-- Choisir un motif --</option>';
-        
         if(data) {
-            let counts = {}; 
+            let currentGroup = "";
+            let groupEl = null;
             data.forEach(c => {
+                if (c.creneau !== currentGroup) {
+                    currentGroup = c.creneau;
+                    groupEl = document.createElement('optgroup');
+                    groupEl.label = `📅 ${currentGroup}`;
+                    select.appendChild(groupEl);
+                }
                 const opt = document.createElement('option');
                 opt.value = c.image_url;
-                let key = `${c.creneau}-${c.nom}`;
-                counts[key] = (counts[key] || 0) + 1;
-                let motifNum = counts[key] > 1 ? ` (n°${counts[key]})` : '';
-                opt.text = `${c.creneau || '??'} | ${c.nom}${motifNum}`;
-                select.appendChild(opt);
+                opt.text = c.nom;
+                groupEl.appendChild(opt);
             });
         }
     }
 
-    function loadMotif(url) {
-        if(!url || url === "") return;
-        localStates[currentZone].image_url = url;
+    async function uploadImage(input) {
+        if (!input.files || input.files.length === 0) return;
+        const file = input.files[0];
+        const fileName = `${Date.now()}-${file.name.replace(/\s/g, '_')}`;
+        const { data, error } = await supabaseClient.storage.from('motifs').upload(fileName, file);
+        if (error) return alert("Erreur upload: " + error.message);
+        const { data: { publicUrl } } = supabaseClient.storage.from('motifs').getPublicUrl(fileName);
+        localStates[currentZone].image_url = publicUrl;
         send();
     }
 
-    async function checkConn() {
-        const { data, error } = await supabaseClient.from('app_settings').select('*').eq('id', 1).single();
-        if(!error) {
-            document.getElementById('status-dot').classList.add('online');
-            document.getElementById('status-text').innerText = "ATELIER CONNECTÉ";
-            updateUI(data.current_layout);
-        }
+    function clearZone() { 
+        if(confirm("Vider cette zone ?")) { localStates[currentZone].image_url = 'vide'; send(); } 
     }
 
+    function loadMotif(url) { if(url) { localStates[currentZone].image_url = url; send(); } }
+    
     function setZone(id) {
         currentZone = id;
         document.querySelectorAll('.zone-btn').forEach(b => b.classList.remove('active'));
@@ -172,56 +159,37 @@
         document.getElementById('z2').style.display = (layout === '1-xl') ? 'none' : 'flex';
         document.getElementById('z3').style.display = (layout === '4-small' || layout === '1-med-2-small') ? 'flex' : 'none';
         document.getElementById('z4').style.display = (layout === '4-small') ? 'flex' : 'none';
-        document.querySelectorAll('.layout-grid button').forEach(b => b.classList.remove('active-layout'));
-        if(document.getElementById('btn-' + layout)) document.getElementById('btn-' + layout).classList.add('active-layout');
     }
 
     async function send() {
         await supabaseClient.from('projection_state').upsert({ zone_id:currentZone, ...localStates[currentZone] }, {onConflict:'zone_id'});
         const prev = document.getElementById('prev' + currentZone);
-        if(localStates[currentZone].image_url && localStates[currentZone].image_url !== 'vide') {
-            prev.src = localStates[currentZone].image_url;
-            prev.style.opacity = "0.4";
-        } else {
-            prev.src = "";
-            prev.style.opacity = "0";
-        }
+        prev.src = (localStates[currentZone].image_url !== 'vide') ? localStates[currentZone].image_url : "";
     }
 
     function move(x,y) { localStates[currentZone].pos_x+=x; localStates[currentZone].pos_y+=y; send(); }
     function zoom(f) { localStates[currentZone].scale*=f; send(); }
-    
-    // Nouvelles fonctions de déformation
-    function rotate(deg) { localStates[currentZone].rotation = (localStates[currentZone].rotation || 0) + deg; send(); }
+    function rotate(deg) { localStates[currentZone].rotation += deg; send(); }
     function perspective(axis, val) { 
-        if(axis === 'X') localStates[currentZone].persp_x = (localStates[currentZone].persp_x || 0) + val;
-        if(axis === 'Y') localStates[currentZone].persp_y = (localStates[currentZone].persp_y || 0) + val;
+        if(axis === 'X') localStates[currentZone].persp_x += val;
+        else localStates[currentZone].persp_y += val;
         send(); 
     }
     
     function reset() { localStates[currentZone] = {...defaultState, image_url: localStates[currentZone].image_url}; send(); }
-    function resetDef() { 
-        localStates[currentZone].rotation = 0; 
-        localStates[currentZone].persp_x = 0; 
-        localStates[currentZone].persp_y = 0; 
-        send(); 
-    }
-
+    function resetDef() { localStates[currentZone].rotation = 0; localStates[currentZone].persp_x = 0; localStates[currentZone].persp_y = 0; send(); }
     async function updateTable(val) { await supabaseClient.from('app_settings').update({ table_height: parseInt(val) }).eq('id', 1); }
-    function changeImage() { const url = prompt("Lien image :"); if(url !== null) { localStates[currentZone].image_url = url ? url : 'vide'; send(); } }
+    function changeImage() { const url = prompt("Lien image :"); if(url) { localStates[currentZone].image_url = url; send(); } }
 
     async function init() {
         const { data } = await supabaseClient.from('projection_state').select('*');
         if(data) data.forEach(d => {
             localStates[d.zone_id] = {...defaultState, ...d};
-            if(d.image_url && d.image_url !== 'vide') {
-                document.getElementById('prev' + d.zone_id).src = d.image_url;
-                document.getElementById('prev' + d.zone_id).style.opacity = "0.4";
-            }
+            if(d.image_url !== 'vide') document.getElementById('prev' + d.zone_id).src = d.image_url;
         });
-        checkConn();
+        const { data:s } = await supabaseClient.from('app_settings').select('*').limit(1).single();
+        if(s) updateUI(s.current_layout);
         fetchClients();
-        supabaseClient.channel('custom-list').on('postgres_changes', {event:'INSERT', schema:'public', table:'liste_clients'}, fetchClients).subscribe();
     }
     init();
 </script>

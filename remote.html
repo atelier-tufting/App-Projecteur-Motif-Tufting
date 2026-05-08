@@ -70,14 +70,17 @@
     </div>
 
     <div class="group">
-        <span class="label">Ajustements Avancés</span>
+        <span class="label">Ajustements Avancés (3D & Rotation)</span>
         <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:5px;">
-            <button class="btn-small" onclick="rotate(-0.5)">↺</button>
-            <button class="btn-small" onclick="perspective('X', 0.5)">⌗↑</button>
-            <button class="btn-small" onclick="rotate(0.5)">↻</button>
-            <button class="btn-small" onclick="perspective('Y', -0.5)">◧</button>
-            <button class="btn-small" style="font-size:8px" onclick="resetDef()">RESET 3D</button>
-            <button class="btn-small" onclick="perspective('Y', 0.5)">◨</button>
+            <button class="btn-small" onclick="rotate(-0.5)">↺ Rot-</button>
+            <button class="btn-small" onclick="perspective('X', 0.5)">⌗↑ X+</button>
+            <button class="btn-small" onclick="rotate(0.5)">↻ Rot+</button>
+            
+            <button class="btn-small" onclick="perspective('Y', -0.5)">◧ Y-</button>
+            <button class="btn-small" onclick="perspective('X', -0.5)">⌗↓ X-</button>
+            <button class="btn-small" onclick="perspective('Y', 0.5)">◨ Y+</button>
+            
+            <button class="btn-small" style="grid-column: span 3; font-size:10px; margin-top: 5px;" onclick="resetDef()">RESET 3D</button>
         </div>
     </div>
 
